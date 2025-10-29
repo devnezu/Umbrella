@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'sonner';
@@ -7,44 +7,31 @@ import { Toaster } from 'sonner';
 import LoginPage from './pages/LoginPage';
 import DashboardProfessor from './pages/DashboardProfessor';
 import DashboardCoordenacao from './pages/DashboardCoordenacao';
-import NotFound from './pages/NotFound';
+import UsuariosPage from './pages/UsuariosPage';
+import ConfiguracoesPage from './pages/ConfiguracoesPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 const RootRedirect = () => {
   const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
+    return <div className="flex h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>;
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  // Suporta tanto 'role' quanto 'tipo' (compatibilidade)
-  const userRole = user?.role || user?.tipo;
-
-  if (userRole === 'professor' || userRole === 'professor_substituto') {
-    return <Navigate to="/professor/dashboard" replace />;
-  }
-
-  if (userRole === 'coordenacao' || userRole === 'admin') {
+  const role = user?.role || user?.tipo;
+  if (role === 'admin' || role === 'coordenacao') {
     return <Navigate to="/coordenacao/dashboard" replace />;
   }
-
-  return <Navigate to="/login" replace />;
+  return <Navigate to="/professor/dashboard" replace />;
 };
 
 function App() {
   return (
-    <Router>
+    <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
           <Toaster position="top-right" richColors closeButton />
@@ -52,32 +39,35 @@ function App() {
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginPage />} />
 
-            {/* Rotas do Professor */}
-            <Route
-              path="/professor/dashboard"
-              element={
-                <ProtectedRoute requiredType="professor">
-                  <DashboardProfessor />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/professor/dashboard" element={
+              <ProtectedRoute requiredRole="professor">
+                <DashboardProfessor />
+              </ProtectedRoute>
+            } />
 
-            {/* Rotas da Coordenação */}
-            <Route
-              path="/coordenacao/dashboard"
-              element={
-                <ProtectedRoute requiredType="coordenacao">
-                  <DashboardCoordenacao />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/coordenacao/dashboard" element={
+              <ProtectedRoute requiredRole={['admin', 'coordenacao']}>
+                <DashboardCoordenacao />
+              </ProtectedRoute>
+            } />
 
-            {/* 404 */}
-            <Route path="*" element={<NotFound />} />
+            <Route path="/coordenacao/usuarios" element={
+              <ProtectedRoute requiredRole={['admin', 'coordenacao']}>
+                <UsuariosPage />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/configuracoes" element={
+              <ProtectedRoute>
+                <ConfiguracoesPage />
+              </ProtectedRoute>
+            } />
+
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
       </ThemeProvider>
-    </Router>
+    </BrowserRouter>
   );
 }
 

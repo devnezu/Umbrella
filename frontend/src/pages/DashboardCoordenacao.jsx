@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import Header from '../components/shared/Header';
+import Layout from '../components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import calendarioService from '../services/calendarioService';
-import pdfService from '../services/pdfService';
 import { toast } from 'sonner';
-import { FileText, Download, CheckCircle, XCircle, AlertCircle, Calendar } from 'lucide-react';
-import Loading from '../components/shared/Loading';
+import { CheckCircle, XCircle, Eye, Download } from 'lucide-react';
 import { formatarData } from '../utils/dateHelpers';
 
 const DashboardCoordenacao = () => {
   const [calendarios, setCalendarios] = useState([]);
-  const [estatisticas, setEstatisticas] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filtroStatus, setFiltroStatus] = useState('todos');
 
   useEffect(() => {
     carregarDados();
@@ -22,15 +19,13 @@ const DashboardCoordenacao = () => {
 
   const carregarDados = async () => {
     try {
-      setLoading(true);
-      const [calendData, statsData] = await Promise.all([
+      const [calData, statsData] = await Promise.all([
         calendarioService.listar(),
         calendarioService.estatisticas()
       ]);
-      setCalendarios(calendData);
-      setEstatisticas(statsData);
+      setCalendarios(calData);
+      setStats(statsData);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
       toast.error('Erro ao carregar dados');
     } finally {
       setLoading(false);
@@ -43,275 +38,145 @@ const DashboardCoordenacao = () => {
       toast.success('Calendário aprovado!');
       carregarDados();
     } catch (error) {
-      toast.error('Erro ao aprovar calendário');
+      toast.error('Erro ao aprovar');
     }
   };
 
   const handleSolicitarAjuste = async (id) => {
-    const comentario = prompt('Digite o comentário para o professor:');
-    if (comentario) {
-      try {
-        await calendarioService.solicitarAjuste(id, comentario);
-        toast.success('Ajuste solicitado!');
-        carregarDados();
-      } catch (error) {
-        toast.error('Erro ao solicitar ajuste');
-      }
-    }
-  };
+    const comentario = prompt('Digite o comentário:');
+    if (!comentario) return;
 
-  const handleDownloadPDF = async (id, turma, disciplina) => {
     try {
-      const blob = await pdfService.gerarPDFIndividual(id);
-      pdfService.downloadPDF(blob, `calendario_${turma}_${disciplina}.pdf`);
-      toast.success('PDF gerado com sucesso!');
+      await calendarioService.solicitarAjuste(id, comentario);
+      toast.success('Ajuste solicitado!');
+      carregarDados();
     } catch (error) {
-      toast.error('Erro ao gerar PDF');
+      toast.error('Erro ao solicitar ajuste');
     }
   };
-
-  const getStatusBadge = (status) => {
-    const config = {
-      rascunho: { variant: 'outline', icon: AlertCircle, label: 'Rascunho' },
-      enviado: { variant: 'warning', icon: AlertCircle, label: 'Pendente' },
-      aprovado: { variant: 'success', icon: CheckCircle, label: 'Aprovado' }
-    };
-
-    const { variant, icon: Icon, label } = config[status];
-
-    return (
-      <Badge variant={variant} className="flex items-center gap-1">
-        <Icon className="w-3 h-3" />
-        {label}
-      </Badge>
-    );
-  };
-
-  const calendariosFiltrados = calendarios.filter(c => {
-    if (filtroStatus === 'todos') return true;
-    return c.status === filtroStatus;
-  });
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <Loading />
-      </div>
-    );
+    return <Layout><div className="flex h-96 items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div></Layout>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-
-      <main className="max-w-7xl mx-auto p-6">
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-900 font-poppins mb-2">
-            Painel da Coordenação
-          </h2>
-          <p className="text-muted-foreground">
-            Gerencie todos os calendários avaliativos
-          </p>
+    <Layout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Painel da Coordenação</h1>
+          <p className="text-muted-foreground">Gerencie todos os calendários avaliativos</p>
         </div>
 
-        {/* Estatísticas */}
-        {estatisticas && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        {stats && (
+          <div className="grid gap-4 md:grid-cols-5">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total
-                </CardTitle>
+                <CardTitle className="text-sm">Total</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{estatisticas.total}</div>
+                <div className="text-2xl font-bold">{stats.total}</div>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Rascunhos
-                </CardTitle>
+                <CardTitle className="text-sm">Rascunhos</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-600">
-                  {estatisticas.rascunho}
-                </div>
+                <div className="text-2xl font-bold">{stats.rascunho}</div>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Pendentes
-                </CardTitle>
+                <CardTitle className="text-sm">Pendentes</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-warning">
-                  {estatisticas.enviado}
-                </div>
+                <div className="text-2xl font-bold">{stats.enviado}</div>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Aprovados
-                </CardTitle>
+                <CardTitle className="text-sm">Aprovados</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-success">
-                  {estatisticas.aprovado}
-                </div>
+                <div className="text-2xl font-bold">{stats.aprovado}</div>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Precisam Impressão
-                </CardTitle>
+                <CardTitle className="text-sm">Impressão</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">
-                  {estatisticas.necessitaImpressao}
-                </div>
+                <div className="text-2xl font-bold">{stats.necessitaImpressao}</div>
               </CardContent>
             </Card>
           </div>
         )}
 
-        {/* Filtros */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex gap-2">
-              <Button
-                variant={filtroStatus === 'todos' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFiltroStatus('todos')}
-              >
-                Todos
-              </Button>
-              <Button
-                variant={filtroStatus === 'enviado' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFiltroStatus('enviado')}
-              >
-                Pendentes
-              </Button>
-              <Button
-                variant={filtroStatus === 'aprovado' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFiltroStatus('aprovado')}
-              >
-                Aprovados
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid gap-4">
+          {calendarios.map((cal) => (
+            <Card key={cal._id}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <CardTitle>{cal.turma} - {cal.disciplina}</CardTitle>
+                      <Badge variant={cal.status === 'aprovado' ? 'default' : cal.status === 'enviado' ? 'secondary' : 'outline'}>
+                        {cal.status}
+                      </Badge>
+                      {cal.necessitaImpressao && <Badge variant="outline">Impressão</Badge>}
+                    </div>
+                    <CardDescription>
+                      Professor: {cal.professor?.nome} • {cal.bimestre}º Bimestre • {cal.ano}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4 grid gap-4 md:grid-cols-3">
+                  <div>
+                    <p className="text-sm font-medium">AV1</p>
+                    <p className="text-sm text-muted-foreground">{formatarData(cal.av1.data)} • {cal.av1.instrumento}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">AV2</p>
+                    <p className="text-sm text-muted-foreground">{formatarData(cal.av2.data)} • {cal.av2.instrumento}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Consolidação</p>
+                    <p className="text-sm text-muted-foreground">{formatarData(cal.consolidacao.data)}</p>
+                  </div>
+                </div>
 
-        {/* Lista de calendários */}
-        <div className="space-y-4">
-          {calendariosFiltrados.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhum calendário encontrado</h3>
-                <p className="text-muted-foreground">
-                  {filtroStatus === 'todos'
-                    ? 'Não há calendários cadastrados'
-                    : `Não há calendários com status "${filtroStatus}"`}
-                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm">
+                    <Eye className="mr-2 h-4 w-4" />
+                    Ver
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Download className="mr-2 h-4 w-4" />
+                    PDF
+                  </Button>
+                  {cal.status === 'enviado' && (
+                    <>
+                      <Button size="sm" onClick={() => handleAprovar(cal._id)}>
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Aprovar
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleSolicitarAjuste(cal._id)}>
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Solicitar Ajuste
+                      </Button>
+                    </>
+                  )}
+                </div>
               </CardContent>
             </Card>
-          ) : (
-            calendariosFiltrados.map((calendario) => (
-              <Card key={calendario._id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CardTitle className="text-lg">
-                          {calendario.turma} - {calendario.disciplina}
-                        </CardTitle>
-                        {getStatusBadge(calendario.status)}
-                        {calendario.necessitaImpressao && (
-                          <Badge variant="outline" className="bg-blue-50">
-                            Impressão
-                          </Badge>
-                        )}
-                      </div>
-                      <CardDescription>
-                        Professor: {calendario.professor?.nome} • {calendario.bimestre}º Bimestre • {calendario.ano}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm font-medium">AV1</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatarData(calendario.av1.data)} • {calendario.av1.instrumento}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-medium">AV2</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatarData(calendario.av2.data)} • {calendario.av2.instrumento}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-medium">Consolidação</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatarData(calendario.consolidacao.data)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDownloadPDF(calendario._id, calendario.turma, calendario.disciplina)}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      PDF
-                    </Button>
-
-                    {calendario.status === 'enviado' && (
-                      <>
-                        <Button
-                          size="sm"
-                          onClick={() => handleAprovar(calendario._id)}
-                        >
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Aprovar
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSolicitarAjuste(calendario._id)}
-                        >
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Solicitar Ajuste
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+          ))}
         </div>
-      </main>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

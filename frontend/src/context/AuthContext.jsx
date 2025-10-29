@@ -8,20 +8,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const initAuth = async () => {
-      const token = authService.getToken();
-      if (token) {
-        try {
-          const userData = await authService.perfil();
-          setUser(userData);
-        } catch (error) {
-          console.error('Erro ao carregar perfil:', error);
-          authService.logout();
-        }
-      }
+    const initAuth = () => {
+      const currentUser = authService.getCurrentUser();
+      setUser(currentUser);
       setLoading(false);
     };
-
     initAuth();
   }, []);
 
@@ -36,25 +27,15 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const value = {
-    user,
-    login,
-    logout,
-    loading,
-    isAuthenticated: !!user,
-    isProfessor: user?.tipo === 'professor',
-    isCoordenacao: user?.tipo === 'coordenacao',
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, login, logout, loading, isAuthenticated: !!user }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };
-
-export default AuthContext;
