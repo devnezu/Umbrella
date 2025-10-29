@@ -1,40 +1,23 @@
 import React from 'react';
 import Sidebar from './Sidebar';
+import MobileHeader from './MobileHeader';
 import { useTheme } from '../../context/ThemeContext';
-import { useAuth } from '../../context/AuthContext';
-import { Button } from '../ui/button';
-import { Moon, Sun, LogOut } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const Layout = ({ children }) => {
-  const { sidebarCollapsed, theme, toggleTheme } = useTheme();
-  const { logout } = useAuth();
+  const { sidebarCollapsed } = useTheme();
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-background">
       <Sidebar />
       
       <div className={cn(
-        "flex flex-1 flex-col transition-all duration-300",
-        sidebarCollapsed ? "ml-16" : "ml-64"
+        "flex flex-1 flex-col transition-all duration-300 ease-in-out",
+        "md:ml-64",
+        sidebarCollapsed && "md:ml-20"
       )}>
-        {/* Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-card px-6">
-          <h1 className="text-xl font-semibold">Calendário Avaliativo</h1>
-          
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={toggleTheme}>
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={logout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
-            </Button>
-          </div>
-        </header>
-
-        {/* Content */}
-        <main className="flex-1 p-6">
+        <MobileHeader />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>

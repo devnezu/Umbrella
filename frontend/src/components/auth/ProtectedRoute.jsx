@@ -13,7 +13,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  const userRole = user?.role || user?.tipo;
+  const userRole = user?.role;
   
   if (requiredRole) {
     const allowed = Array.isArray(requiredRole) ? requiredRole.includes(userRole) : userRole === requiredRole;

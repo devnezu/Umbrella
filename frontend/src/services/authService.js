@@ -10,7 +10,7 @@ const authService = {
     return data;
   },
 
-  async registrar(userData) {
+  async solicitarRegistro(userData) {
     const { data } = await api.post('/auth/registrar', userData);
     return data;
   },

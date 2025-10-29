@@ -1,17 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { proteger, coordenacaoApenas } = require('../middlewares/authMiddleware');
+const { proteger } = require('../middlewares/authMiddleware');
+const { checkRole } = require('../middlewares/rbacMiddleware');
 
-// Rotas públicas
+const adminCoord = checkRole('admin', 'coordenacao');
+
 router.post('/login', authController.login);
+router.post('/registrar', authController.registrar);
 
-// Rotas protegidas
 router.get('/perfil', proteger, authController.perfil);
 router.put('/perfil', proteger, authController.atualizarPerfil);
 
-// Rotas de coordenação
-router.post('/registrar', proteger, coordenacaoApenas, authController.registrar);
-router.get('/usuarios', proteger, coordenacaoApenas, authController.listarUsuarios);
+router.get('/usuarios', proteger, adminCoord, authController.listarUsuarios);
+router.put('/usuarios/:id', proteger, adminCoord, authController.atualizarUsuario);
+router.patch('/usuarios/:id/aprovar', proteger, adminCoord, authController.aprovarUsuario);
+router.patch('/usuarios/:id/rejeitar', proteger, adminCoord, authController.rejeitarUsuario);
+router.delete('/usuarios/:id', proteger, adminCoord, authController.deletarUsuario);
 
 module.exports = router;

@@ -6,13 +6,23 @@ const userService = {
     return data;
   },
 
-  async criar(userData) {
-    const { data } = await api.post('/auth/registrar', userData);
+  async atualizar(id, userData) {
+    const { data } = await api.put(`/auth/usuarios/${id}`, userData);
+    return data;
+  },
+  
+  async atualizarPerfil(userData) {
+    const { data } = await api.put(`/auth/perfil`, userData);
     return data;
   },
 
-  async atualizar(id, userData) {
-    const { data } = await api.put(`/auth/perfil`, userData);
+  async aprovar(id) {
+    const { data } = await api.patch(`/auth/usuarios/${id}/aprovar`);
+    return data;
+  },
+
+  async rejeitar(id) {
+    const { data } = await api.patch(`/auth/usuarios/${id}/rejeitar`);
     return data;
   },
 

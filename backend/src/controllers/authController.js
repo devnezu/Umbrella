@@ -1,170 +1,166 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Gerar token JWT
 const gerarToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '7d'
   });
 };
 
-// Login de usuário
 exports.login = async (req, res) => {
-  try {
-    const { email, senha } = req.body;
+  const { email, senha } = req.body;
 
-    // Validar campos
-    if (!email || !senha) {
-      return res.status(400).json({ mensagem: 'Email e senha são obrigatórios' });
-    }
-
-    // Buscar usuário
-    const user = await User.findOne({ email }).select('+senha');
-
-    if (!user) {
-      return res.status(401).json({ mensagem: 'Credenciais inválidas' });
-    }
-
-    // Verificar senha
-    const senhaCorreta = await user.compararSenha(senha);
-
-    if (!senhaCorreta) {
-      return res.status(401).json({ mensagem: 'Credenciais inválidas' });
-    }
-
-    // Gerar token
-    const token = gerarToken(user._id);
-
-    // Retornar dados do usuário (sem senha)
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        nome: user.nome,
-        email: user.email,
-        tipo: user.tipo,
-        disciplinas: user.disciplinas,
-        turmas: user.turmas
-      }
-    });
-  } catch (error) {
-    console.error('Erro no login:', error);
-    res.status(500).json({ mensagem: 'Erro ao fazer login' });
+  if (!email || !senha) {
+    return res.status(400).json({ mensagem: 'Email e senha são obrigatórios' });
   }
+
+  const user = await User.findOne({ email }).select('+senha');
+
+  if (!user) {
+    return res.status(401).json({ mensagem: 'Credenciais inválidas' });
+  }
+
+  if (user.status !== 'aprovado') {
+    return res.status(403).json({ mensagem: 'Sua conta está pendente de aprovação.' });
+  }
+
+  const senhaCorreta = await user.compararSenha(senha);
+
+  if (!senhaCorreta) {
+    return res.status(401).json({ mensagem: 'Credenciais inválidas' });
+  }
+
+  const token = gerarToken(user._id);
+
+  const userData = user.toObject();
+  delete userData.senha;
+
+  res.json({
+    token,
+    user: userData
+  });
 };
 
-// Registrar novo usuário (somente coordenação pode fazer)
 exports.registrar = async (req, res) => {
-  try {
-    const { nome, email, senha, tipo, disciplinas, turmas } = req.body;
+  const { nome, email, senha, role } = req.body;
 
-    // Validar campos obrigatórios
-    if (!nome || !email || !senha || !tipo) {
-      return res.status(400).json({ mensagem: 'Todos os campos são obrigatórios' });
-    }
-
-    // Verificar se o usuário já existe
-    const userExiste = await User.findOne({ email });
-
-    if (userExiste) {
-      return res.status(400).json({ mensagem: 'Email já está em uso' });
-    }
-
-    // Criar usuário
-    const user = await User.create({
-      nome,
-      email,
-      senha,
-      tipo,
-      disciplinas: disciplinas || [],
-      turmas: turmas || []
-    });
-
-    // Gerar token
-    const token = gerarToken(user._id);
-
-    res.status(201).json({
-      token,
-      user: {
-        id: user._id,
-        nome: user.nome,
-        email: user.email,
-        tipo: user.tipo,
-        disciplinas: user.disciplinas,
-        turmas: user.turmas
-      }
-    });
-  } catch (error) {
-    console.error('Erro ao registrar:', error);
-    res.status(500).json({ mensagem: 'Erro ao registrar usuário' });
+  if (!nome || !email || !senha) {
+    return res.status(400).json({ mensagem: 'Nome, email e senha são obrigatórios' });
   }
+
+  const userExiste = await User.findOne({ email });
+
+  if (userExiste) {
+    return res.status(400).json({ mensagem: 'Email já está em uso' });
+  }
+
+  await User.create({
+    nome,
+    email,
+    senha,
+    role: role || 'professor',
+    status: 'pendente'
+  });
+
+  res.status(201).json({
+    mensagem: 'Solicitação de registro enviada com sucesso. Aguarde a aprovação de um administrador.'
+  });
 };
 
-// Obter perfil do usuário logado
 exports.perfil = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user.id);
 
-    if (!user) {
-      return res.status(404).json({ mensagem: 'Usuário não encontrado' });
-    }
-
-    res.json({
-      id: user._id,
-      nome: user.nome,
-      email: user.email,
-      tipo: user.tipo,
-      disciplinas: user.disciplinas,
-      turmas: user.turmas
-    });
-  } catch (error) {
-    console.error('Erro ao buscar perfil:', error);
-    res.status(500).json({ mensagem: 'Erro ao buscar perfil' });
+  if (!user) {
+    return res.status(404).json({ mensagem: 'Usuário não encontrado' });
   }
+
+  res.json(user);
 };
 
-// Atualizar perfil
 exports.atualizarPerfil = async (req, res) => {
-  try {
-    const { nome, email, disciplinas, turmas } = req.body;
+  const { nome, email, disciplinas, turmas, preferences } = req.body;
 
-    const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user.id);
 
-    if (!user) {
-      return res.status(404).json({ mensagem: 'Usuário não encontrado' });
-    }
-
-    user.nome = nome || user.nome;
-    user.email = email || user.email;
-
-    if (user.tipo === 'professor') {
-      user.disciplinas = disciplinas || user.disciplinas;
-      user.turmas = turmas || user.turmas;
-    }
-
-    await user.save();
-
-    res.json({
-      id: user._id,
-      nome: user.nome,
-      email: user.email,
-      tipo: user.tipo,
-      disciplinas: user.disciplinas,
-      turmas: user.turmas
-    });
-  } catch (error) {
-    console.error('Erro ao atualizar perfil:', error);
-    res.status(500).json({ mensagem: 'Erro ao atualizar perfil' });
+  if (!user) {
+    return res.status(404).json({ mensagem: 'Usuário não encontrado' });
   }
+
+  user.nome = nome || user.nome;
+  user.email = email || user.email;
+
+  if (user.role === 'professor') {
+    user.disciplinas = disciplinas || user.disciplinas;
+    user.turmas = turmas || user.turmas;
+  }
+  
+  if (preferences) {
+    user.preferences = { ...user.preferences, ...preferences };
+  }
+
+  const updatedUser = await user.save();
+
+  res.json(updatedUser);
 };
 
-// Listar todos os usuários (somente coordenação)
 exports.listarUsuarios = async (req, res) => {
-  try {
-    const users = await User.find({}).select('-senha');
-    res.json(users);
-  } catch (error) {
-    console.error('Erro ao listar usuários:', error);
-    res.status(500).json({ mensagem: 'Erro ao listar usuários' });
+  const users = await User.find({}).sort({ createdAt: -1 });
+  res.json(users);
+};
+
+exports.atualizarUsuario = async (req, res) => {
+  const { id } = req.params;
+  const { nome, email, role, status } = req.body;
+
+  const user = await User.findById(id);
+
+  if (!user) {
+    return res.status(404).json({ mensagem: 'Usuário não encontrado' });
   }
+
+  user.nome = nome || user.nome;
+  user.email = email || user.email;
+  user.role = role || user.role;
+  user.status = status || user.status;
+
+  const updatedUser = await user.save();
+  res.json(updatedUser);
+};
+
+exports.aprovarUsuario = async (req, res) => {
+  const { id } = req.params;
+  const user = await User.findById(id);
+
+  if (!user) {
+    return res.status(404).json({ mensagem: 'Usuário não encontrado' });
+  }
+
+  user.status = 'aprovado';
+  await user.save();
+  res.json({ mensagem: 'Usuário aprovado com sucesso.' });
+};
+
+exports.rejeitarUsuario = async (req, res) => {
+  const { id } = req.params;
+  const user = await User.findById(id);
+
+  if (!user) {
+    return res.status(404).json({ mensagem: 'Usuário não encontrado' });
+  }
+
+  user.status = 'rejeitado';
+  await user.save();
+  res.json({ mensagem: 'Usuário rejeitado com sucesso.' });
+};
+
+exports.deletarUsuario = async (req, res) => {
+  const { id } = req.params;
+  const user = await User.findById(id);
+
+  if (!user) {
+    return res.status(404).json({ mensagem: 'Usuário não encontrado' });
+  }
+
+  await User.findByIdAndDelete(id);
+  res.json({ mensagem: 'Usuário deletado com sucesso.' });
 };

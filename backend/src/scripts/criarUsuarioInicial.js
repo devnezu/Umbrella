@@ -1,15 +1,13 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const User = require('../models/User');
 require('dotenv').config();
 
 const criarUsuarioInicial = async () => {
   try {
-    // Conectar ao MongoDB
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/calendario-avaliativo');
     console.log('Conectado ao MongoDB');
 
-    // Verificar se já existe algum usuário
     const usuarioExistente = await User.findOne({ email: 'admin@colegio.com' });
 
     if (usuarioExistente) {
@@ -17,14 +15,12 @@ const criarUsuarioInicial = async () => {
       process.exit(0);
     }
 
-    // Criar usuário admin inicial
-    const senhaHash = await bcrypt.hash('admin123', 10);
-
     const admin = await User.create({
       nome: 'Administrador',
       email: 'admin@colegio.com',
-      senha: senhaHash,
+      senha: 'admin123',
       role: 'admin',
+      status: 'aprovado',
       ativo: true
     });
 

@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Badge } from '../components/ui/badge';
 import calendarioService from '../services/calendarioService';
 import { toast } from 'sonner';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, Calendar, FileText, CheckCircle, Eye } from 'lucide-react';
+import { Spinner } from '../components/ui/spinner';
+import { Separator } from '../components/ui/separator';
+import { formatarData } from '../utils/dateHelpers';
 
 const INSTRUMENTOS = [
   'Prova Impressa',
@@ -73,7 +77,9 @@ const CalendarioFormPage = () => {
         }
       });
     } catch (error) {
-      toast.error('Erro ao carregar calendário');
+      toast.error('Erro ao carregar calendário', {
+        description: error.response?.data?.mensagem || 'Tente novamente'
+      });
       navigate('/professor/dashboard');
     } finally {
       setLoading(false);
@@ -86,304 +92,455 @@ const CalendarioFormPage = () => {
       setLoading(true);
       if (id) {
         await calendarioService.atualizar(id, formData);
-        toast.success('Calendário atualizado!');
+        toast.success('Calendário atualizado!', {
+          description: 'Suas alterações foram salvas'
+        });
       } else {
         await calendarioService.criar(formData);
-        toast.success('Calendário criado!');
+        toast.success('Calendário criado!', {
+          description: 'Seu calendário foi criado com sucesso'
+        });
       }
       navigate('/professor/dashboard');
     } catch (error) {
-      toast.error(id ? 'Erro ao atualizar' : 'Erro ao criar');
+      toast.error(id ? 'Erro ao atualizar' : 'Erro ao criar', {
+        description: error.response?.data?.mensagem || 'Tente novamente'
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleNestedChange = (parent, field, value) => {
     setFormData(prev => ({
       ...prev,
-      [parent]: {
-        ...prev[parent],
-        [field]: value
-      }
+      [parent]: { ...prev[parent], [field]: value }
     }));
   };
 
   if (loading && id) {
-    return <Layout>
-      <div className="flex h-96 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    </Layout>;
+    return (
+      <Layout>
+        <div className="flex h-96 items-center justify-center">
+          <Spinner className="h-8 w-8" />
+        </div>
+      </Layout>
+    );
   }
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/professor/dashboard')}>
+      <div className="space-y-6 animate-in">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate('/professor/dashboard')}
+            className="self-start"
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               {id ? 'Editar Calendário' : 'Novo Calendário'}
             </h1>
-            <p className="text-muted-foreground">
-              Preencha as informações do calendário avaliativo
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+              {id ? 'Atualize as informações do calendário' : 'Preencha os dados e veja o preview'}
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Informações Básicas */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações Básicas</CardTitle>
-              <CardDescription>Dados gerais do calendário avaliativo</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+        {/* Layout responsivo com 1 ou 2 colunas */}
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
+          {/* Coluna Esquerda - Formulário */}
+          <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+              {/* Informações Básicas */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg sm:text-xl font-semibold">Informações Básicas</h2>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="turma">Turma *</Label>
+                    <Input
+                      id="turma"
+                      value={formData.turma}
+                      onChange={(e) => handleChange('turma', e.target.value)}
+                      placeholder="Ex: 9º Ano A"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="disciplina">Disciplina *</Label>
+                    <Input
+                      id="disciplina"
+                      value={formData.disciplina}
+                      onChange={(e) => handleChange('disciplina', e.target.value)}
+                      placeholder="Ex: Matemática"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bimestre">Bimestre *</Label>
+                    <Select value={String(formData.bimestre)} onValueChange={(value) => handleChange('bimestre', parseInt(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1º Bimestre</SelectItem>
+                        <SelectItem value="2">2º Bimestre</SelectItem>
+                        <SelectItem value="3">3º Bimestre</SelectItem>
+                        <SelectItem value="4">4º Bimestre</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ano">Ano *</Label>
+                    <Input
+                      id="ano"
+                      type="number"
+                      value={formData.ano}
+                      onChange={(e) => handleChange('ano', parseInt(e.target.value))}
+                      required
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="turma">Turma *</Label>
-                  <Input
-                    id="turma"
-                    value={formData.turma}
-                    onChange={(e) => handleChange('turma', e.target.value)}
-                    placeholder="Ex: 9º Ano A"
+                  <Label htmlFor="observacoes">Observações Gerais</Label>
+                  <Textarea
+                    id="observacoes"
+                    value={formData.observacoes}
+                    onChange={(e) => handleChange('observacoes', e.target.value)}
+                    placeholder="Observações gerais sobre o calendário"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* AV1 */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                  <h2 className="text-lg sm:text-xl font-semibold">AV1 - Primeira Avaliação</h2>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="av1Data">Data *</Label>
+                    <Input
+                      id="av1Data"
+                      type="date"
+                      value={formData.av1.data}
+                      onChange={(e) => handleNestedChange('av1', 'data', e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="av1Instrumento">Instrumento *</Label>
+                    <Select value={formData.av1.instrumento} onValueChange={(value) => handleNestedChange('av1', 'instrumento', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INSTRUMENTOS.map(inst => (
+                          <SelectItem key={inst} value={inst}>{inst}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="av1Conteudo">Conteúdo *</Label>
+                  <Textarea
+                    id="av1Conteudo"
+                    value={formData.av1.conteudo}
+                    onChange={(e) => handleNestedChange('av1', 'conteudo', e.target.value)}
+                    placeholder="Descreva o conteúdo"
+                    rows={3}
                     required
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="disciplina">Disciplina *</Label>
-                  <Input
-                    id="disciplina"
-                    value={formData.disciplina}
-                    onChange={(e) => handleChange('disciplina', e.target.value)}
-                    placeholder="Ex: Matemática"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bimestre">Bimestre *</Label>
-                  <select
-                    id="bimestre"
-                    value={formData.bimestre}
-                    onChange={(e) => handleChange('bimestre', parseInt(e.target.value))}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    required
-                  >
-                    <option value={1}>1º Bimestre</option>
-                    <option value={2}>2º Bimestre</option>
-                    <option value={3}>3º Bimestre</option>
-                    <option value={4}>4º Bimestre</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ano">Ano *</Label>
-                  <Input
-                    id="ano"
-                    type="number"
-                    value={formData.ano}
-                    onChange={(e) => handleChange('ano', parseInt(e.target.value))}
+                  <Label htmlFor="av1Criterios">Critérios *</Label>
+                  <Textarea
+                    id="av1Criterios"
+                    value={formData.av1.criterios}
+                    onChange={(e) => handleNestedChange('av1', 'criterios', e.target.value)}
+                    placeholder="Critérios de avaliação"
+                    rows={3}
                     required
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="observacoes">Observações Gerais</Label>
-                <Textarea
-                  id="observacoes"
-                  value={formData.observacoes}
-                  onChange={(e) => handleChange('observacoes', e.target.value)}
-                  placeholder="Observações gerais sobre o calendário"
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
+              <Separator />
 
-          {/* AV1 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>AV1 - Primeira Avaliação</CardTitle>
-              <CardDescription>Informações sobre a primeira avaliação</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+              {/* AV2 */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-purple-600" />
+                  <h2 className="text-lg sm:text-xl font-semibold">AV2 - Segunda Avaliação</h2>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="av2Data">Data *</Label>
+                    <Input
+                      id="av2Data"
+                      type="date"
+                      value={formData.av2.data}
+                      onChange={(e) => handleNestedChange('av2', 'data', e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="av2Instrumento">Instrumento *</Label>
+                    <Select value={formData.av2.instrumento} onValueChange={(value) => handleNestedChange('av2', 'instrumento', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INSTRUMENTOS.map(inst => (
+                          <SelectItem key={inst} value={inst}>{inst}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="av1Data">Data *</Label>
+                  <Label htmlFor="av2Conteudo">Conteúdo *</Label>
+                  <Textarea
+                    id="av2Conteudo"
+                    value={formData.av2.conteudo}
+                    onChange={(e) => handleNestedChange('av2', 'conteudo', e.target.value)}
+                    placeholder="Descreva o conteúdo"
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="av2Criterios">Critérios *</Label>
+                  <Textarea
+                    id="av2Criterios"
+                    value={formData.av2.criterios}
+                    onChange={(e) => handleNestedChange('av2', 'criterios', e.target.value)}
+                    placeholder="Critérios de avaliação"
+                    rows={3}
+                    required
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Consolidação */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <h2 className="text-lg sm:text-xl font-semibold">Consolidação</h2>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="consolidacaoData">Data *</Label>
                   <Input
-                    id="av1Data"
+                    id="consolidacaoData"
                     type="date"
-                    value={formData.av1.data}
-                    onChange={(e) => handleNestedChange('av1', 'data', e.target.value)}
+                    value={formData.consolidacao.data}
+                    onChange={(e) => handleNestedChange('consolidacao', 'data', e.target.value)}
+                    required
+                    className="max-w-xs"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="consolidacaoConteudo">Conteúdo *</Label>
+                  <Textarea
+                    id="consolidacaoConteudo"
+                    value={formData.consolidacao.conteudo}
+                    onChange={(e) => handleNestedChange('consolidacao', 'conteudo', e.target.value)}
+                    placeholder="Processo de consolidação"
+                    rows={3}
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="av1Instrumento">Instrumento Avaliativo *</Label>
-                  <select
-                    id="av1Instrumento"
-                    value={formData.av1.instrumento}
-                    onChange={(e) => handleNestedChange('av1', 'instrumento', e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    required
-                  >
-                    {INSTRUMENTOS.map(inst => (
-                      <option key={inst} value={inst}>{inst}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="av1Conteudo">Conteúdo *</Label>
-                <Textarea
-                  id="av1Conteudo"
-                  value={formData.av1.conteudo}
-                  onChange={(e) => handleNestedChange('av1', 'conteudo', e.target.value)}
-                  placeholder="Descreva o conteúdo que será avaliado (mínimo 10 caracteres)"
-                  rows={3}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="av1Criterios">Critérios de Avaliação *</Label>
-                <Textarea
-                  id="av1Criterios"
-                  value={formData.av1.criterios}
-                  onChange={(e) => handleNestedChange('av1', 'criterios', e.target.value)}
-                  placeholder="Descreva os critérios de avaliação (mínimo 10 caracteres)"
-                  rows={3}
-                  required
-                />
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* AV2 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>AV2 - Segunda Avaliação</CardTitle>
-              <CardDescription>Informações sobre a segunda avaliação</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="av2Data">Data *</Label>
-                  <Input
-                    id="av2Data"
-                    type="date"
-                    value={formData.av2.data}
-                    onChange={(e) => handleNestedChange('av2', 'data', e.target.value)}
+                  <Label htmlFor="consolidacaoCriterios">Critérios *</Label>
+                  <Textarea
+                    id="consolidacaoCriterios"
+                    value={formData.consolidacao.criterios}
+                    onChange={(e) => handleNestedChange('consolidacao', 'criterios', e.target.value)}
+                    placeholder="Critérios de consolidação"
+                    rows={3}
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="av2Instrumento">Instrumento Avaliativo *</Label>
-                  <select
-                    id="av2Instrumento"
-                    value={formData.av2.instrumento}
-                    onChange={(e) => handleNestedChange('av2', 'instrumento', e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    required
-                  >
-                    {INSTRUMENTOS.map(inst => (
-                      <option key={inst} value={inst}>{inst}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="av2Conteudo">Conteúdo *</Label>
-                <Textarea
-                  id="av2Conteudo"
-                  value={formData.av2.conteudo}
-                  onChange={(e) => handleNestedChange('av2', 'conteudo', e.target.value)}
-                  placeholder="Descreva o conteúdo que será avaliado (mínimo 10 caracteres)"
-                  rows={3}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="av2Criterios">Critérios de Avaliação *</Label>
-                <Textarea
-                  id="av2Criterios"
-                  value={formData.av2.criterios}
-                  onChange={(e) => handleNestedChange('av2', 'criterios', e.target.value)}
-                  placeholder="Descreva os critérios de avaliação (mínimo 10 caracteres)"
-                  rows={3}
-                  required
-                />
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Consolidação */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Consolidação de Notas</CardTitle>
-              <CardDescription>Informações sobre a consolidação das avaliações</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="consolidacaoData">Data *</Label>
-                <Input
-                  id="consolidacaoData"
-                  type="date"
-                  value={formData.consolidacao.data}
-                  onChange={(e) => handleNestedChange('consolidacao', 'data', e.target.value)}
-                  required
-                />
+              {/* Actions - Sticky em mobile também */}
+              <div className="flex flex-col sm:flex-row gap-3 sticky bottom-4 bg-background/95 backdrop-blur p-4 rounded-lg border shadow-lg">
+                <Button type="submit" disabled={loading} size="lg" className="w-full sm:w-auto">
+                  {loading ? (
+                    <>
+                      <Spinner className="mr-2 h-4 w-4" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-5 w-5" />
+                      {id ? 'Atualizar' : 'Criar Calendário'}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate('/professor/dashboard')}
+                  disabled={loading}
+                  size="lg"
+                  className="w-full sm:w-auto"
+                >
+                  Cancelar
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="consolidacaoConteudo">Conteúdo *</Label>
-                <Textarea
-                  id="consolidacaoConteudo"
-                  value={formData.consolidacao.conteudo}
-                  onChange={(e) => handleNestedChange('consolidacao', 'conteudo', e.target.value)}
-                  placeholder="Descreva o processo de consolidação (mínimo 10 caracteres)"
-                  rows={3}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="consolidacaoCriterios">Critérios *</Label>
-                <Textarea
-                  id="consolidacaoCriterios"
-                  value={formData.consolidacao.criterios}
-                  onChange={(e) => handleNestedChange('consolidacao', 'criterios', e.target.value)}
-                  placeholder="Descreva os critérios de consolidação (mínimo 10 caracteres)"
-                  rows={3}
-                  required
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Ações */}
-          <div className="flex gap-3">
-            <Button type="submit" disabled={loading}>
-              <Save className="mr-2 h-4 w-4" />
-              {loading ? 'Salvando...' : id ? 'Atualizar' : 'Criar'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/professor/dashboard')}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
+            </form>
           </div>
-        </form>
+
+          {/* Coluna Direita - Preview (oculto em mobile) */}
+          <div className="hidden lg:block lg:sticky lg:top-4 h-fit">
+            <div className="rounded-lg border bg-card p-6 space-y-6">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Eye className="h-5 w-5" />
+                <h3 className="font-semibold">Preview</h3>
+              </div>
+
+              <Separator />
+
+              {/* Preview Header */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-2xl font-bold">
+                    {formData.turma || 'Turma'}
+                  </h3>
+                  <Badge variant="outline">
+                    {formData.bimestre}º Bim
+                  </Badge>
+                </div>
+                <p className="text-lg text-muted-foreground">
+                  {formData.disciplina || 'Disciplina'}
+                </p>
+                <p className="text-sm text-muted-foreground">Ano: {formData.ano}</p>
+              </div>
+
+              <Separator />
+
+              {/* Preview AV1 */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-blue-600" />
+                  <h4 className="font-semibold text-sm">AV1</h4>
+                </div>
+                <div className="pl-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Data:</span>
+                    <span className="font-medium">
+                      {formData.av1.data ? formatarData(formData.av1.data) : '-'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Instrumento:</span>
+                    <span className="font-medium">{formData.av1.instrumento}</span>
+                  </div>
+                  {formData.av1.conteudo && (
+                    <div>
+                      <span className="text-muted-foreground">Conteúdo:</span>
+                      <p className="text-xs mt-1 line-clamp-2">{formData.av1.conteudo}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Preview AV2 */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-purple-600" />
+                  <h4 className="font-semibold text-sm">AV2</h4>
+                </div>
+                <div className="pl-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Data:</span>
+                    <span className="font-medium">
+                      {formData.av2.data ? formatarData(formData.av2.data) : '-'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Instrumento:</span>
+                    <span className="font-medium">{formData.av2.instrumento}</span>
+                  </div>
+                  {formData.av2.conteudo && (
+                    <div>
+                      <span className="text-muted-foreground">Conteúdo:</span>
+                      <p className="text-xs mt-1 line-clamp-2">{formData.av2.conteudo}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Preview Consolidação */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-600" />
+                  <h4 className="font-semibold text-sm">Consolidação</h4>
+                </div>
+                <div className="pl-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Data:</span>
+                    <span className="font-medium">
+                      {formData.consolidacao.data ? formatarData(formData.consolidacao.data) : '-'}
+                    </span>
+                  </div>
+                  {formData.consolidacao.conteudo && (
+                    <div>
+                      <span className="text-muted-foreground">Conteúdo:</span>
+                      <p className="text-xs mt-1 line-clamp-2">{formData.consolidacao.conteudo}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {formData.observacoes && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm">Observações</h4>
+                    <p className="text-xs text-muted-foreground line-clamp-3">
+                      {formData.observacoes}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </Layout>
   );

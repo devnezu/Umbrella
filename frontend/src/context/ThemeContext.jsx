@@ -7,6 +7,7 @@ export const ThemeProvider = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => 
     localStorage.getItem('sidebarCollapsed') === 'true'
   );
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -21,9 +22,20 @@ export const ThemeProvider = ({ children }) => {
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
   const toggleSidebar = () => setSidebarCollapsed(prev => !prev);
+  const toggleMobileSidebar = () => setIsMobileSidebarOpen(prev => !prev);
+
+  const value = {
+    theme,
+    toggleTheme,
+    sidebarCollapsed,
+    toggleSidebar,
+    isMobileSidebarOpen,
+    toggleMobileSidebar,
+    setIsMobileSidebarOpen
+  };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, sidebarCollapsed, toggleSidebar }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

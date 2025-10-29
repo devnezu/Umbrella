@@ -7,7 +7,7 @@ exports.checkPermission = (requiredPermission) => {
       return res.status(401).json({ mensagem: 'Não autenticado' });
     }
 
-    const userRole = req.user.role || req.user.tipo;
+    const userRole = req.user.role; // ✅ Alterado de req.user.tipo para req.user.role
     const roleData = ROLES[userRole];
 
     if (!roleData) {
@@ -34,7 +34,7 @@ exports.checkAnyPermission = (permissions) => {
       return res.status(401).json({ mensagem: 'Não autenticado' });
     }
 
-    const userRole = req.user.role || req.user.tipo;
+    const userRole = req.user.role; // ✅ Alterado
     const roleData = ROLES[userRole];
 
     if (!roleData) {
@@ -63,7 +63,7 @@ exports.checkAllPermissions = (permissions) => {
       return res.status(401).json({ mensagem: 'Não autenticado' });
     }
 
-    const userRole = req.user.role || req.user.tipo;
+    const userRole = req.user.role; // ✅ Alterado
     const roleData = ROLES[userRole];
 
     if (!roleData) {
@@ -92,7 +92,7 @@ exports.checkRole = (...allowedRoles) => {
       return res.status(401).json({ mensagem: 'Não autenticado' });
     }
 
-    const userRole = req.user.role || req.user.tipo;
+    const userRole = req.user.role; // ✅ Alterado
 
     if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({
@@ -108,7 +108,7 @@ exports.checkRole = (...allowedRoles) => {
 // Helper para adicionar permissões ao objeto req
 exports.attachPermissions = (req, res, next) => {
   if (req.user) {
-    const userRole = req.user.role || req.user.tipo;
+    const userRole = req.user.role; // ✅ Alterado
     const roleData = ROLES[userRole];
 
     req.permissions = roleData ? roleData.permissions : [];
