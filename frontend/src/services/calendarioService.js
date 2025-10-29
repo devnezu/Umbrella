@@ -44,6 +44,13 @@ const calendarioService = {
   async estatisticas(filtros = {}) {
     const { data } = await api.get('/calendarios/estatisticas', { params: filtros });
     return data;
+  },
+
+  async gerarPDF(id) {
+    const response = await api.get(`/pdf/individual/${id}`, {
+      responseType: 'blob'
+    });
+    return response.data;
   }
 };
 

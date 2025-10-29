@@ -9,6 +9,8 @@ import DashboardProfessor from './pages/DashboardProfessor';
 import DashboardCoordenacao from './pages/DashboardCoordenacao';
 import UsuariosPage from './pages/UsuariosPage';
 import ConfiguracoesPage from './pages/ConfiguracoesPage';
+import CalendarioFormPage from './pages/CalendarioFormPage';
+import CalendarioViewPage from './pages/CalendarioViewPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 const RootRedirect = () => {
@@ -42,6 +44,30 @@ function App() {
             <Route path="/professor/dashboard" element={
               <ProtectedRoute requiredRole="professor">
                 <DashboardProfessor />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/professor/novo" element={
+              <ProtectedRoute requiredRole="professor">
+                <CalendarioFormPage />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/professor/editar/:id" element={
+              <ProtectedRoute requiredRole="professor">
+                <CalendarioFormPage />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/professor/visualizar/:id" element={
+              <ProtectedRoute requiredRole="professor">
+                <CalendarioViewPage />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/coordenacao/visualizar/:id" element={
+              <ProtectedRoute requiredRole={['admin', 'coordenacao']}>
+                <CalendarioViewPage />
               </ProtectedRoute>
             } />
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -9,6 +10,7 @@ import { CheckCircle, XCircle, Eye, Download } from 'lucide-react';
 import { formatarData } from '../utils/dateHelpers';
 
 const DashboardCoordenacao = () => {
+  const navigate = useNavigate();
   const [calendarios, setCalendarios] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -52,6 +54,24 @@ const DashboardCoordenacao = () => {
       carregarDados();
     } catch (error) {
       toast.error('Erro ao solicitar ajuste');
+    }
+  };
+
+  const handleDownloadPDF = async (cal) => {
+    try {
+      toast.info('Gerando PDF...');
+      const blob = await calendarioService.gerarPDF(cal._id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `calendario_${cal.turma}_${cal.disciplina}_${cal.bimestre}bim.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('PDF baixado!');
+    } catch (error) {
+      toast.error('Erro ao gerar PDF');
     }
   };
 
@@ -150,11 +170,11 @@ const DashboardCoordenacao = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/coordenacao/visualizar/${cal._id}`)}>
                     <Eye className="mr-2 h-4 w-4" />
                     Ver
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => handleDownloadPDF(cal)}>
                     <Download className="mr-2 h-4 w-4" />
                     PDF
                   </Button>

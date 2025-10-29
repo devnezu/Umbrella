@@ -156,7 +156,7 @@ const DashboardProfessor = () => {
                   <div className="flex gap-2">
                     {cal.status === 'rascunho' ? (
                       <>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/professor/editar/${cal._id}`)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
                         </Button>
@@ -166,7 +166,7 @@ const DashboardProfessor = () => {
                         </Button>
                       </>
                     ) : (
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/professor/visualizar/${cal._id}`)}>
                         <Eye className="mr-2 h-4 w-4" />
                         Visualizar
                       </Button>
