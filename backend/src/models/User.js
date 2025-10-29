@@ -20,10 +20,17 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Senha é obrigatória'],
     minlength: 6
   },
+  // Campo principal: role (sistema RBAC)
+  role: {
+    type: String,
+    enum: ['admin', 'coordenacao', 'professor', 'professor_substituto'],
+    required: [true, 'Role é obrigatória'],
+    default: 'professor'
+  },
+  // Mantido por compatibilidade (deprecado)
   tipo: {
     type: String,
-    enum: ['professor', 'coordenacao'],
-    required: [true, 'Tipo de usuário é obrigatório']
+    enum: ['admin', 'coordenacao', 'professor', 'professor_substituto'],
   },
   disciplinas: {
     type: [String],
@@ -32,6 +39,26 @@ const userSchema = new mongoose.Schema({
   turmas: {
     type: [String],
     default: []
+  },
+  ativo: {
+    type: Boolean,
+    default: true
+  },
+  // Configurações de tema e personalização
+  preferences: {
+    theme: {
+      type: String,
+      enum: ['light', 'dark', 'system'],
+      default: 'light'
+    },
+    primaryColor: {
+      type: String,
+      default: '#003D7A'
+    },
+    sidebarCollapsed: {
+      type: Boolean,
+      default: false
+    }
   }
 }, {
   timestamps: true
@@ -39,6 +66,11 @@ const userSchema = new mongoose.Schema({
 
 // Hash da senha antes de salvar
 userSchema.pre('save', async function(next) {
+  // Sincronizar tipo com role para compatibilidade
+  if (this.isModified('role')) {
+    this.tipo = this.role;
+  }
+
   if (!this.isModified('senha')) {
     return next();
   }
@@ -55,6 +87,12 @@ userSchema.pre('save', async function(next) {
 // Método para comparar senhas
 userSchema.methods.compararSenha = async function(senhaInformada) {
   return await bcrypt.compare(senhaInformada, this.senha);
+};
+
+// Método para atualizar preferências
+userSchema.methods.updatePreferences = function(preferences) {
+  this.preferences = { ...this.preferences, ...preferences };
+  return this.save();
 };
 
 // Não retornar senha nas queries

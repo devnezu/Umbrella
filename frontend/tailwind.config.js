@@ -82,8 +82,11 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        poppins: ['Poppins', 'sans-serif'],
-        inter: ['Inter', 'sans-serif'],
+        outfit: ['Outfit', 'sans-serif'],
+        'space-grotesk': ['Space Grotesk', 'sans-serif'],
+        // Fallback para compatibilidade
+        poppins: ['Outfit', 'sans-serif'],
+        inter: ['Outfit', 'sans-serif'],
       },
       keyframes: {
         "accordion-down": {
