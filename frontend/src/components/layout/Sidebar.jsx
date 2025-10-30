@@ -83,24 +83,23 @@ const Sidebar = () => {
   const SidebarContent = () => (
     <div className="flex h-full flex-col bg-card border-r">
       {/* Header */}
-      <div className="flex h-16 items-center justify-between px-4">
+      <div className="flex h-16 items-center justify-center px-4">
         {!sidebarCollapsed && (
-          <Link to="/" className="flex items-center gap-2" onClick={handleLinkClick}>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700">
-              <GraduationCap className="h-5 w-5 text-white" />
+          <Link to="/" className="flex items-center gap-2.5" onClick={handleLinkClick}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30">
+              <GraduationCap className="h-6 w-6 text-white" />
             </div>
-            <span className="text-lg font-semibold tracking-wide font-serif">ScholarSync</span>
+            <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              ScholarSync
+            </span>
           </Link>
         )}
-        {!sidebarCollapsed && (
-          <Button variant="ghost" size="icon" className="hidden md:flex h-8 w-8" onClick={toggleSidebar}>
-            <PanelLeftClose className="h-4 w-4" />
-          </Button>
-        )}
         {sidebarCollapsed && (
-          <Button variant="ghost" size="icon" className="hidden md:flex h-8 w-8 mx-auto" onClick={toggleSidebar}>
-            <PanelLeftOpen className="h-4 w-4" />
-          </Button>
+          <Link to="/" className="flex items-center justify-center" onClick={handleLinkClick}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30">
+              <GraduationCap className="h-6 w-6 text-white" />
+            </div>
+          </Link>
         )}
       </div>
 
@@ -192,10 +191,10 @@ const Sidebar = () => {
       <div className="border-t p-3 space-y-3">
         {/* User Info */}
         <div className={cn(
-          "flex items-center gap-3 rounded-lg bg-muted/50 p-2",
+          "flex items-center gap-3 rounded-lg bg-gradient-to-br from-muted/80 to-muted/50 p-2.5 border border-border/50",
           sidebarCollapsed && "justify-center p-2"
         )}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-700 text-sm font-bold text-white">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-sm font-bold text-white shadow-md">
             {user?.nome?.charAt(0) || 'U'}
           </div>
           {!sidebarCollapsed && (
@@ -206,37 +205,28 @@ const Sidebar = () => {
           )}
         </div>
 
-        {/* Actions */}
-        <div className={cn(
-          "flex items-center gap-2",
-          sidebarCollapsed && "flex-col"
-        )}>
-          <TooltipProvider delayDuration={0}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
-                  {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side={sidebarCollapsed ? "right" : "top"}>
-                {theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider delayDuration={0}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={logout} className="h-9 w-9">
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side={sidebarCollapsed ? "right" : "top"}>
-                Sair
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+        {/* Logout Action */}
+        <TooltipProvider delayDuration={0}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size={sidebarCollapsed ? "icon" : "default"}
+                onClick={logout}
+                className={cn(
+                  "w-full hover:bg-destructive/10 hover:text-destructive transition-colors",
+                  sidebarCollapsed && "h-9 w-9"
+                )}
+              >
+                <LogOut className="h-4 w-4" />
+                {!sidebarCollapsed && <span className="ml-2">Sair</span>}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side={sidebarCollapsed ? "right" : "top"}>
+              Sair
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   );
@@ -263,6 +253,47 @@ const Sidebar = () => {
           </aside>
         </>
       )}
+
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-6 right-6 z-50 hidden md:flex flex-col gap-3">
+        {/* Theme Toggle Button */}
+        <TooltipProvider delayDuration={0}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="default"
+                size="icon"
+                onClick={toggleTheme}
+                className="h-12 w-12 rounded-full shadow-lg bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 transition-all hover:scale-110 hover:shadow-xl hover:shadow-blue-500/50"
+              >
+                {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              {theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        {/* Sidebar Toggle Button */}
+        <TooltipProvider delayDuration={0}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="default"
+                size="icon"
+                onClick={toggleSidebar}
+                className="h-12 w-12 rounded-full shadow-lg bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800 hover:from-slate-700 hover:via-slate-800 hover:to-slate-900 transition-all hover:scale-110 hover:shadow-xl hover:shadow-slate-500/50"
+              >
+                {sidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              {sidebarCollapsed ? 'Expandir Sidebar' : 'Recolher Sidebar'}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
     </>
   );
 };
