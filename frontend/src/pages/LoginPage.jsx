@@ -70,9 +70,11 @@ const LoginPage = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left Panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 p-12 text-white flex-col justify-between relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-20"></div>
+      <div 
+        className="hidden lg:flex lg:w-1/2 bg-cover bg-center p-12 text-white flex-col justify-between relative overflow-hidden"
+        style={{ backgroundImage: "url('/alunos.jpg')" }}
+      >
+        <div className="absolute inset-0 bg-black/60 z-0"></div>
         
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-8">
@@ -128,10 +130,8 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* Right Panel */}
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md space-y-8 animate-in">
-          {/* Mobile Header */}
           <div className="lg:hidden text-center mb-8">
             <div className="inline-flex items-center gap-2 mb-4">
               <GraduationCap className="h-8 w-8 text-primary" />
@@ -152,7 +152,6 @@ const LoginPage = () => {
               </TabsTrigger>
             </TabsList>
 
-            {/* Login Tab */}
             <TabsContent value="login" className="mt-6">
               <Card>
                 <CardHeader>
@@ -223,7 +222,6 @@ const LoginPage = () => {
               </Card>
             </TabsContent>
 
-            {/* Register Tab */}
             <TabsContent value="register" className="mt-6">
               <Card>
                 <CardHeader>
