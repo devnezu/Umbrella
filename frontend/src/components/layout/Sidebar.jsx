@@ -81,26 +81,10 @@ const Sidebar = () => {
   };
 
   const SidebarContent = () => (
-    <div className="flex h-full flex-col bg-card border-r">
-      {/* Header */}
+    <div className="flex h-full flex-col bg-card border-r relative">
+      {/* Header - Espaço para logo futura */}
       <div className="flex h-16 items-center justify-center px-4">
-        {!sidebarCollapsed && (
-          <Link to="/" className="flex items-center gap-2.5" onClick={handleLinkClick}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30">
-              <GraduationCap className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              ScholarSync
-            </span>
-          </Link>
-        )}
-        {sidebarCollapsed && (
-          <Link to="/" className="flex items-center justify-center" onClick={handleLinkClick}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30">
-              <GraduationCap className="h-6 w-6 text-white" />
-            </div>
-          </Link>
-        )}
+        {/* Espaço reservado para logo */}
       </div>
 
       {/* Barra de Pesquisa com efeito de profundidade */}
@@ -239,6 +223,47 @@ const Sidebar = () => {
         sidebarCollapsed ? "w-20" : "w-64"
       )}>
         <SidebarContent />
+
+        {/* Floating Action Buttons na borda da sidebar */}
+        <div className="absolute top-1/2 -translate-y-1/2 -right-3 flex flex-col gap-3 z-50">
+          {/* Theme Toggle Button */}
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="default"
+                  size="icon"
+                  onClick={toggleTheme}
+                  className="h-8 w-8 rounded-full shadow-lg bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 transition-all hover:scale-110 border-2 border-background"
+                >
+                  {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {/* Sidebar Toggle Button */}
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="default"
+                  size="icon"
+                  onClick={toggleSidebar}
+                  className="h-8 w-8 rounded-full shadow-lg bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800 hover:from-slate-700 hover:via-slate-800 hover:to-slate-900 transition-all hover:scale-110 border-2 border-background"
+                >
+                  {sidebarCollapsed ? <PanelLeftOpen className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {sidebarCollapsed ? 'Expandir Sidebar' : 'Recolher Sidebar'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </aside>
 
       {/* Mobile Sidebar */}
@@ -253,47 +278,6 @@ const Sidebar = () => {
           </aside>
         </>
       )}
-
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 z-50 hidden md:flex flex-col gap-3">
-        {/* Theme Toggle Button */}
-        <TooltipProvider delayDuration={0}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="default"
-                size="icon"
-                onClick={toggleTheme}
-                className="h-12 w-12 rounded-full shadow-lg bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 transition-all hover:scale-110 hover:shadow-xl hover:shadow-blue-500/50"
-              >
-                {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              {theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        {/* Sidebar Toggle Button */}
-        <TooltipProvider delayDuration={0}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="default"
-                size="icon"
-                onClick={toggleSidebar}
-                className="h-12 w-12 rounded-full shadow-lg bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800 hover:from-slate-700 hover:via-slate-800 hover:to-slate-900 transition-all hover:scale-110 hover:shadow-xl hover:shadow-slate-500/50"
-              >
-                {sidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              {sidebarCollapsed ? 'Expandir Sidebar' : 'Recolher Sidebar'}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
     </>
   );
 };
