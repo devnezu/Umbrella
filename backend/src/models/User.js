@@ -18,12 +18,19 @@ const userSchema = new mongoose.Schema({
   senha: {
     type: String,
     required: [true, 'Senha é obrigatória'],
-    minlength: 6
+    minlength: 6,
+    select: false
   },
-  tipo: {
+  role: {
     type: String,
-    enum: ['professor', 'coordenacao'],
-    required: [true, 'Tipo de usuário é obrigatório']
+    enum: ['admin', 'coordenacao', 'professor', 'professor_substituto'],
+    required: [true, 'Role é obrigatória'],
+    default: 'professor'
+  },
+  status: {
+    type: String,
+    enum: ['pendente', 'aprovado', 'rejeitado'],
+    default: 'pendente'
   },
   disciplinas: {
     type: [String],
@@ -32,13 +39,33 @@ const userSchema = new mongoose.Schema({
   turmas: {
     type: [String],
     default: []
+  },
+  ativo: {
+    type: Boolean,
+    default: false
+  },
+  preferences: {
+    theme: {
+      type: String,
+      enum: ['light', 'dark', 'system'],
+      default: 'light'
+    },
+    primaryColor: {
+      type: String,
+      default: '#003D7A'
+    },
+    sidebarCollapsed: {
+      type: Boolean,
+      default: false
+    }
   }
 }, {
   timestamps: true
 });
 
-// Hash da senha antes de salvar
 userSchema.pre('save', async function(next) {
+  this.ativo = this.status === 'aprovado';
+
   if (!this.isModified('senha')) {
     return next();
   }
@@ -52,16 +79,13 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Método para comparar senhas
 userSchema.methods.compararSenha = async function(senhaInformada) {
   return await bcrypt.compare(senhaInformada, this.senha);
 };
 
-// Não retornar senha nas queries
-userSchema.methods.toJSON = function() {
-  const obj = this.toObject();
-  delete obj.senha;
-  return obj;
+userSchema.methods.updatePreferences = function(preferences) {
+  this.preferences = { ...this.preferences, ...preferences };
+  return this.save();
 };
 
 module.exports = mongoose.model('User', userSchema);

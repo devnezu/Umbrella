@@ -1,20 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import Header from '../components/shared/Header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { useNavigate } from 'react-router-dom';
+import Layout from '../components/layout/Layout';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import calendarioService from '../services/calendarioService';
-import pdfService from '../services/pdfService';
 import { toast } from 'sonner';
-import { FileText, Download, CheckCircle, XCircle, AlertCircle, Calendar } from 'lucide-react';
-import Loading from '../components/shared/Loading';
+import { CheckCircle, XCircle, Eye, Download, Search, FileText, Clock, AlertCircle, Send } from 'lucide-react';
 import { formatarData } from '../utils/dateHelpers';
+import { Spinner } from '../components/ui/spinner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
 const DashboardCoordenacao = () => {
+  const navigate = useNavigate();
   const [calendarios, setCalendarios] = useState([]);
-  const [estatisticas, setEstatisticas] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [ajusteDialog, setAjusteDialog] = useState({ open: false, calendarioId: null });
+  const [comentario, setComentario] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     carregarDados();
@@ -22,16 +30,16 @@ const DashboardCoordenacao = () => {
 
   const carregarDados = async () => {
     try {
-      setLoading(true);
-      const [calendData, statsData] = await Promise.all([
+      const [calData, statsData] = await Promise.all([
         calendarioService.listar(),
         calendarioService.estatisticas()
       ]);
-      setCalendarios(calendData);
-      setEstatisticas(statsData);
+      setCalendarios(calData);
+      setStats(statsData);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      toast.error('Erro ao carregar dados');
+      toast.error('Erro ao carregar dados', {
+        description: error.response?.data?.mensagem || 'Tente novamente'
+      });
     } finally {
       setLoading(false);
     }
@@ -40,278 +48,330 @@ const DashboardCoordenacao = () => {
   const handleAprovar = async (id) => {
     try {
       await calendarioService.aprovar(id);
-      toast.success('Calendário aprovado!');
+      toast.success('Calendário aprovado!', {
+        description: 'O professor foi notificado'
+      });
       carregarDados();
     } catch (error) {
-      toast.error('Erro ao aprovar calendário');
+      toast.error('Erro ao aprovar calendário', {
+        description: error.response?.data?.mensagem || 'Tente novamente'
+      });
     }
   };
 
-  const handleSolicitarAjuste = async (id) => {
-    const comentario = prompt('Digite o comentário para o professor:');
-    if (comentario) {
-      try {
-        await calendarioService.solicitarAjuste(id, comentario);
-        toast.success('Ajuste solicitado!');
-        carregarDados();
-      } catch (error) {
-        toast.error('Erro ao solicitar ajuste');
-      }
+  const handleSolicitarAjuste = async () => {
+    if (!comentario.trim()) {
+      toast.error('Digite um comentário', {
+        description: 'Informe o motivo do ajuste'
+      });
+      return;
     }
-  };
 
-  const handleDownloadPDF = async (id, turma, disciplina) => {
     try {
-      const blob = await pdfService.gerarPDFIndividual(id);
-      pdfService.downloadPDF(blob, `calendario_${turma}_${disciplina}.pdf`);
-      toast.success('PDF gerado com sucesso!');
+      setSubmitting(true);
+      await calendarioService.solicitarAjuste(ajusteDialog.calendarioId, comentario);
+      toast.success('Ajuste solicitado!', {
+        description: 'O professor receberá o feedback'
+      });
+      setAjusteDialog({ open: false, calendarioId: null });
+      setComentario('');
+      carregarDados();
     } catch (error) {
-      toast.error('Erro ao gerar PDF');
+      toast.error('Erro ao solicitar ajuste', {
+        description: error.response?.data?.mensagem || 'Tente novamente'
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const getStatusBadge = (status) => {
-    const config = {
-      rascunho: { variant: 'outline', icon: AlertCircle, label: 'Rascunho' },
-      enviado: { variant: 'warning', icon: AlertCircle, label: 'Pendente' },
-      aprovado: { variant: 'success', icon: CheckCircle, label: 'Aprovado' }
-    };
-
-    const { variant, icon: Icon, label } = config[status];
-
-    return (
-      <Badge variant={variant} className="flex items-center gap-1">
-        <Icon className="w-3 h-3" />
-        {label}
-      </Badge>
-    );
+  const handleDownloadPDF = async (cal) => {
+    try {
+      toast.info('Gerando PDF...', {
+        description: 'Aguarde alguns instantes'
+      });
+      const blob = await calendarioService.gerarPDF(cal._id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `calendario_${cal.turma}_${cal.disciplina}_${cal.bimestre}bim.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('PDF baixado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao gerar PDF', {
+        description: error.response?.data?.mensagem || 'Tente novamente'
+      });
+    }
   };
 
-  const calendariosFiltrados = calendarios.filter(c => {
-    if (filtroStatus === 'todos') return true;
-    return c.status === filtroStatus;
+  const filteredCalendarios = calendarios.filter(cal => {
+    const matchesSearch = cal.turma.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         cal.disciplina.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         cal.professor?.nome.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || cal.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <Loading />
-      </div>
+      <Layout>
+        <div className="flex items-center justify-center h-96">
+          <Spinner className="h-8 w-8" />
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-
-      <main className="max-w-7xl mx-auto p-6">
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-900 font-poppins mb-2">
-            Painel da Coordenação
-          </h2>
-          <p className="text-muted-foreground">
-            Gerencie todos os calendários avaliativos
+    <Layout>
+      <div className="space-y-8 animate-in">
+        {/* Header */}
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Painel da Coordenação</h1>
+          <p className="text-muted-foreground mt-2">
+            Gerencie e aprove calendários avaliativos
           </p>
         </div>
 
-        {/* Estatísticas */}
-        {estatisticas && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{estatisticas.total}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Rascunhos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-600">
-                  {estatisticas.rascunho}
+        {/* Stats */}
+        {stats && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total</p>
+                  <p className="text-3xl font-bold mt-2">{stats.total}</p>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Pendentes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-warning">
-                  {estatisticas.enviado}
+                <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                  <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Aprovados
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-success">
-                  {estatisticas.aprovado}
+            <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Rascunhos</p>
+                  <p className="text-3xl font-bold mt-2">{stats.rascunho}</p>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Precisam Impressão
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">
-                  {estatisticas.necessitaImpressao}
+            <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Pendentes</p>
+                  <p className="text-3xl font-bold mt-2">{stats.enviado}</p>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                  <AlertCircle className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Aprovados</p>
+                  <p className="text-3xl font-bold mt-2">{stats.aprovado}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Impressão</p>
+                  <p className="text-3xl font-bold mt-2">{stats.necessitaImpressao}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                  <Download className="h-6 w-6 text-red-600 dark:text-red-400" />
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Filtros */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex gap-2">
-              <Button
-                variant={filtroStatus === 'todos' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFiltroStatus('todos')}
-              >
-                Todos
-              </Button>
-              <Button
-                variant={filtroStatus === 'enviado' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFiltroStatus('enviado')}
-              >
-                Pendentes
-              </Button>
-              <Button
-                variant={filtroStatus === 'aprovado' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFiltroStatus('aprovado')}
-              >
-                Aprovados
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por turma, disciplina ou professor..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="rascunho">Rascunho</SelectItem>
+              <SelectItem value="enviado">Enviado</SelectItem>
+              <SelectItem value="aprovado">Aprovado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        {/* Lista de calendários */}
-        <div className="space-y-4">
-          {calendariosFiltrados.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhum calendário encontrado</h3>
-                <p className="text-muted-foreground">
-                  {filtroStatus === 'todos'
-                    ? 'Não há calendários cadastrados'
-                    : `Não há calendários com status "${filtroStatus}"`}
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            calendariosFiltrados.map((calendario) => (
-              <Card key={calendario._id}>
-                <CardHeader>
+        {/* Calendários */}
+        {filteredCalendarios.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg">
+            <FileText className="mb-4 h-16 w-16 text-muted-foreground/50" />
+            <h3 className="mb-2 text-lg font-semibold">Nenhum calendário encontrado</h3>
+            <p className="text-muted-foreground max-w-sm">
+              {searchTerm || statusFilter !== 'all' 
+                ? 'Tente ajustar seus filtros de busca'
+                : 'Não há calendários cadastrados no momento'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredCalendarios.map((cal) => (
+              <div
+                key={cal._id}
+                className="rounded-lg border bg-card p-6 hover:shadow-md transition-all"
+              >
+                <div className="space-y-4">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CardTitle className="text-lg">
-                          {calendario.turma} - {calendario.disciplina}
-                        </CardTitle>
-                        {getStatusBadge(calendario.status)}
-                        {calendario.necessitaImpressao && (
-                          <Badge variant="outline" className="bg-blue-50">
-                            Impressão
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-xl">{cal.turma} - {cal.disciplina}</h3>
+                        <Badge
+                          variant={
+                            cal.status === 'aprovado'
+                              ? 'default'
+                              : cal.status === 'enviado'
+                              ? 'secondary'
+                              : 'outline'
+                          }
+                          className="capitalize"
+                        >
+                          {cal.status}
+                        </Badge>
+                        {cal.necessitaImpressao && (
+                          <Badge variant="outline" className="border-red-500 text-red-500">
+                            Requer Impressão
                           </Badge>
                         )}
                       </div>
-                      <CardDescription>
-                        Professor: {calendario.professor?.nome} • {calendario.bimestre}º Bimestre • {calendario.ano}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm font-medium">AV1</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatarData(calendario.av1.data)} • {calendario.av1.instrumento}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-medium">AV2</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatarData(calendario.av2.data)} • {calendario.av2.instrumento}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-medium">Consolidação</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatarData(calendario.consolidacao.data)}
+                        Professor: {cal.professor?.nome} • {cal.bimestre}º Bimestre • {cal.ano}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="grid gap-4 sm:grid-cols-3 text-sm">
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground">AV1</p>
+                      <p className="font-semibold">{formatarData(cal.av1.data)}</p>
+                      <p className="text-xs text-muted-foreground">{cal.av1.instrumento}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground">AV2</p>
+                      <p className="font-semibold">{formatarData(cal.av2.data)}</p>
+                      <p className="text-xs text-muted-foreground">{cal.av2.instrumento}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground">Consolidação</p>
+                      <p className="font-semibold">{formatarData(cal.consolidacao.data)}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
                     <Button
-                      size="sm"
                       variant="outline"
-                      onClick={() => handleDownloadPDF(calendario._id, calendario.turma, calendario.disciplina)}
+                      size="sm"
+                      onClick={() => navigate(`/coordenacao/visualizar/${cal._id}`)}
                     >
-                      <Download className="w-4 h-4 mr-2" />
+                      <Eye className="mr-2 h-4 w-4" />
+                      Visualizar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadPDF(cal)}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
                       PDF
                     </Button>
-
-                    {calendario.status === 'enviado' && (
+                    {cal.status === 'enviado' && (
                       <>
-                        <Button
-                          size="sm"
-                          onClick={() => handleAprovar(calendario._id)}
-                        >
-                          <CheckCircle className="w-4 h-4 mr-2" />
+                        <Button size="sm" onClick={() => handleAprovar(cal._id)}>
+                          <CheckCircle className="mr-2 h-4 w-4" />
                           Aprovar
                         </Button>
-
                         <Button
-                          size="sm"
                           variant="outline"
-                          onClick={() => handleSolicitarAjuste(calendario._id)}
+                          size="sm"
+                          onClick={() => setAjusteDialog({ open: true, calendarioId: cal._id })}
                         >
-                          <XCircle className="w-4 h-4 mr-2" />
+                          <XCircle className="mr-2 h-4 w-4" />
                           Solicitar Ajuste
                         </Button>
                       </>
                     )}
                   </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      </main>
-    </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Dialog de Ajuste */}
+      <Dialog open={ajusteDialog.open} onOpenChange={(open) => setAjusteDialog({ ...ajusteDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Solicitar Ajuste</DialogTitle>
+            <DialogDescription>
+              Descreva as alterações necessárias para o professor
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Digite o motivo do ajuste solicitado..."
+            value={comentario}
+            onChange={(e) => setComentario(e.target.value)}
+            className="min-h-[120px]"
+          />
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setAjusteDialog({ open: false, calendarioId: null });
+                setComentario('');
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSolicitarAjuste} disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Enviar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Layout>
   );
 };
 

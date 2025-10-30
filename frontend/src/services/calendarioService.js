@@ -1,60 +1,57 @@
 import api from './api';
 
-class CalendarioService {
+const calendarioService = {
   async listar(filtros = {}) {
-    const params = new URLSearchParams(filtros);
-    const response = await api.get(`/calendarios?${params}`);
-    return response.data;
-  }
+    const { data } = await api.get('/calendarios', { params: filtros });
+    return data;
+  },
 
   async buscarPorId(id) {
-    const response = await api.get(`/calendarios/${id}`);
-    return response.data;
-  }
+    const { data } = await api.get(`/calendarios/${id}`);
+    return data;
+  },
 
   async criar(calendarioData) {
-    const response = await api.post('/calendarios', calendarioData);
-    return response.data;
-  }
+    const { data } = await api.post('/calendarios', calendarioData);
+    return data;
+  },
 
   async atualizar(id, calendarioData) {
-    const response = await api.put(`/calendarios/${id}`, calendarioData);
-    return response.data;
-  }
+    const { data } = await api.put(`/calendarios/${id}`, calendarioData);
+    return data;
+  },
 
   async deletar(id) {
-    const response = await api.delete(`/calendarios/${id}`);
-    return response.data;
-  }
+    const { data } = await api.delete(`/calendarios/${id}`);
+    return data;
+  },
 
   async enviar(id) {
-    const response = await api.patch(`/calendarios/${id}/enviar`);
-    return response.data;
-  }
+    const { data } = await api.patch(`/calendarios/${id}/enviar`);
+    return data;
+  },
 
   async aprovar(id) {
-    const response = await api.patch(`/calendarios/${id}/aprovar`);
-    return response.data;
-  }
+    const { data } = await api.patch(`/calendarios/${id}/aprovar`);
+    return data;
+  },
 
   async solicitarAjuste(id, comentario) {
-    const response = await api.patch(`/calendarios/${id}/solicitar-ajuste`, {
-      comentarioCoordenacao: comentario,
+    const { data } = await api.patch(`/calendarios/${id}/solicitar-ajuste`, { comentarioCoordenacao: comentario });
+    return data;
+  },
+
+  async estatisticas(filtros = {}) {
+    const { data } = await api.get('/calendarios/estatisticas', { params: filtros });
+    return data;
+  },
+
+  async gerarPDF(id) {
+    const response = await api.get(`/pdf/individual/${id}`, {
+      responseType: 'blob'
     });
     return response.data;
   }
+};
 
-  async estatisticas(filtros = {}) {
-    const params = new URLSearchParams(filtros);
-    const response = await api.get(`/calendarios/estatisticas?${params}`);
-    return response.data;
-  }
-
-  async calendarioGeral(filtros = {}) {
-    const params = new URLSearchParams(filtros);
-    const response = await api.get(`/calendarios/calendario-geral?${params}`);
-    return response.data;
-  }
-}
-
-export default new CalendarioService();
+export default calendarioService;

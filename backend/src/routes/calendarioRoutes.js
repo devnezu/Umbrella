@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const calendarioController = require('../controllers/calendarioController');
-const { proteger, coordenacaoApenas } = require('../middlewares/authMiddleware');
+const { proteger } = require('../middlewares/authMiddleware');
+const { checkRole } = require('../middlewares/rbacMiddleware');
 const { body } = require('express-validator');
 
-// Validações
 const validarCalendario = [
   body('turma').notEmpty().withMessage('Turma é obrigatória'),
   body('disciplina').notEmpty().withMessage('Disciplina é obrigatória'),
@@ -23,20 +23,19 @@ const validarCalendario = [
   body('consolidacao.criterios').isLength({ min: 10 }).withMessage('Critérios da Consolidação devem ter pelo menos 10 caracteres')
 ];
 
-// Rotas protegidas (professor e coordenação)
+const adminCoord = checkRole('admin', 'coordenacao');
+
 router.get('/', proteger, calendarioController.listar);
-router.get('/estatisticas', proteger, coordenacaoApenas, calendarioController.estatisticas);
-router.get('/calendario-geral', proteger, coordenacaoApenas, calendarioController.calendarioGeral);
+router.get('/estatisticas', proteger, adminCoord, calendarioController.estatisticas);
+router.get('/calendario-geral', proteger, adminCoord, calendarioController.calendarioGeral);
 router.get('/:id', proteger, calendarioController.buscarPorId);
 router.post('/', proteger, validarCalendario, calendarioController.criar);
 router.put('/:id', proteger, calendarioController.atualizar);
 router.delete('/:id', proteger, calendarioController.deletar);
 
-// Rotas específicas de professor
-router.patch('/:id/enviar', proteger, calendarioController.enviar);
+router.patch('/:id/enviar', proteger, checkRole('professor'), calendarioController.enviar);
 
-// Rotas específicas de coordenação
-router.patch('/:id/aprovar', proteger, coordenacaoApenas, calendarioController.aprovar);
-router.patch('/:id/solicitar-ajuste', proteger, coordenacaoApenas, calendarioController.solicitarAjuste);
+router.patch('/:id/aprovar', proteger, adminCoord, calendarioController.aprovar);
+router.patch('/:id/solicitar-ajuste', proteger, adminCoord, calendarioController.solicitarAjuste);
 
 module.exports = router;

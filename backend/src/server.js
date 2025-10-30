@@ -17,27 +17,44 @@ const app = express();
 // Conectar ao banco de dados
 connectDatabase();
 
-// Middlewares de segurança
-app.use(helmet());
+// ✅ CORS - DEVE VIR PRIMEIRO, ANTES DE QUALQUER OUTRA COISA
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 600 // Cache preflight por 10 minutos
+}));
 
-// Rate limiting
+// Middlewares básicos
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ✅ Helmet - com configurações mais permissivas para desenvolvimento
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
+}));
+
+// ✅ Rate limiting - MUITO mais permissivo em desenvolvimento
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // limite de 100 requisições por IP
-  message: 'Muitas requisições deste IP, tente novamente mais tarde'
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 em dev, 100 em prod
+  message: 'Muitas requisições deste IP, tente novamente mais tarde',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Pular rate limit para localhost em desenvolvimento
+    return process.env.NODE_ENV !== 'production' && 
+           (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1');
+  }
 });
 
 app.use('/api/', limiter);
 
-// CORS
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
-
-// Body parser
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// ✅ Tratamento explícito para OPTIONS (preflight)
+app.options('*', cors());
 
 // Rotas
 app.use('/api/auth', authRoutes);
@@ -49,7 +66,8 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
@@ -64,13 +82,33 @@ app.use(errorHandler);
 // Iniciar servidor
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-  console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+  console.log(`📦 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 CORS habilitado para: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+});
+
+// ✅ Tratamento gracioso de encerramento
+process.on('SIGTERM', () => {
+  console.log('SIGTERM recebido. Encerrando servidor graciosamente...');
+  server.close(() => {
+    console.log('Servidor encerrado');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT recebido. Encerrando servidor graciosamente...');
+  server.close(() => {
+    console.log('Servidor encerrado');
+    process.exit(0);
+  });
 });
 
 // Tratamento de erros não capturados
 process.on('unhandledRejection', (err) => {
-  console.error('Erro não tratado:', err);
-  process.exit(1);
+  console.error('❌ Erro não tratado:', err);
+  server.close(() => {
+    process.exit(1);
+  });
 });
