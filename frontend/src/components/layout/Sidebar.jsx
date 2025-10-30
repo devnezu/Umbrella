@@ -35,24 +35,44 @@ const Sidebar = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  const getMenuItems = () => {
+  const getMenuCategories = () => {
     const role = user?.role;
-    
+
     if (role === 'admin' || role === 'coordenacao') {
       return [
-        { to: '/coordenacao/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { to: '/coordenacao/usuarios', icon: Users, label: 'Usuários' },
-        { to: '/configuracoes', icon: Settings, label: 'Configurações' },
+        {
+          title: 'Gerenciamento',
+          items: [
+            { to: '/coordenacao/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+            { to: '/coordenacao/usuarios', icon: Users, label: 'Usuários' },
+          ]
+        },
+        {
+          title: 'Sistema',
+          items: [
+            { to: '/configuracoes', icon: Settings, label: 'Configurações' },
+          ]
+        }
       ];
     }
 
     return [
-      { to: '/professor/dashboard', icon: LayoutDashboard, label: 'Calendários' },
-      { to: '/configuracoes', icon: Settings, label: 'Configurações' },
+      {
+        title: 'Acadêmico',
+        items: [
+          { to: '/professor/dashboard', icon: LayoutDashboard, label: 'Calendários' },
+        ]
+      },
+      {
+        title: 'Sistema',
+        items: [
+          { to: '/configuracoes', icon: Settings, label: 'Configurações' },
+        ]
+      }
     ];
   };
 
-  const menuItems = getMenuItems();
+  const menuCategories = getMenuCategories();
 
   const handleLinkClick = () => {
     if (isMobileSidebarOpen) {
@@ -69,7 +89,7 @@ const Sidebar = () => {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700">
               <GraduationCap className="h-5 w-5 text-white" />
             </div>
-            <span className="text-lg font-bold tracking-tight">ScholarSync</span>
+            <span className="text-lg font-semibold tracking-wide font-serif">ScholarSync</span>
           </Link>
         )}
         {!sidebarCollapsed && (
@@ -86,74 +106,85 @@ const Sidebar = () => {
 
       {/* Barra de Pesquisa com efeito de profundidade */}
       <div className="px-3 pb-4">
-        <div className="relative">
-          <div className="absolute inset-0 bg-black/20 dark:bg-black/40 rounded-lg blur-sm" />
-          <div className="relative bg-muted/80 dark:bg-muted/60 rounded-lg shadow-inner">
-            <div className="relative flex items-center">
-              <Search className={cn(
-                "absolute h-4 w-4 text-muted-foreground transition-all",
-                sidebarCollapsed ? "left-1/2 -translate-x-1/2" : "left-3"
-              )} />
-              {!sidebarCollapsed && (
-                <Input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="Pesquisar... (P)"
-                  className="pl-9 bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 h-9"
-                />
-              )}
-              {sidebarCollapsed && (
-                <div className="w-full h-9 flex items-center justify-center cursor-pointer" onClick={toggleSidebar}>
-                  <span className="sr-only">Pesquisar</span>
-                </div>
-              )}
-            </div>
+        <div className="relative bg-muted/50 dark:bg-muted/30 rounded-lg border border-border/50">
+          <div className="relative flex items-center">
+            <Search className={cn(
+              "absolute h-4 w-4 text-muted-foreground transition-all",
+              sidebarCollapsed ? "left-1/2 -translate-x-1/2" : "left-3"
+            )} />
+            {!sidebarCollapsed && (
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Pesquisar... (P)"
+                className="pl-9 bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 h-9"
+              />
+            )}
+            {sidebarCollapsed && (
+              <div className="w-full h-9 flex items-center justify-center cursor-pointer" onClick={toggleSidebar}>
+                <span className="sr-only">Pesquisar</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4">
-        <nav className="space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.to;
-            
-            const button = (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={handleLinkClick}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                  sidebarCollapsed && "justify-center"
-                )}
-              >
-                <Icon className="h-5 w-5 shrink-0" />
-                {!sidebarCollapsed && <span>{item.label}</span>}
-              </Link>
-            );
+        <nav className="space-y-4">
+          {menuCategories.map((category, categoryIndex) => (
+            <div key={categoryIndex} className="space-y-1">
+              {!sidebarCollapsed && (
+                <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  {category.title}
+                </h3>
+              )}
+              {sidebarCollapsed && categoryIndex > 0 && (
+                <div className="my-2 border-t border-border" />
+              )}
+              <div className="space-y-1">
+                {category.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.to;
 
-            if (sidebarCollapsed) {
-              return (
-                <TooltipProvider key={item.to} delayDuration={0}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      {button}
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      {item.label}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              );
-            }
+                  const button = (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={handleLinkClick}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                        sidebarCollapsed && "justify-center"
+                      )}
+                    >
+                      <Icon className="h-5 w-5 shrink-0" />
+                      {!sidebarCollapsed && <span>{item.label}</span>}
+                    </Link>
+                  );
 
-            return button;
-          })}
+                  if (sidebarCollapsed) {
+                    return (
+                      <TooltipProvider key={item.to} delayDuration={0}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            {button}
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            {item.label}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  }
+
+                  return button;
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
       </ScrollArea>
 
