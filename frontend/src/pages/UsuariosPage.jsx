@@ -120,7 +120,7 @@ const UserCard = ({ user, onAprovar, onRejeitar, onEdit, onDelete }) => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => onAprovar(user._id)}
+                onClick={() => onAprovar(user.id)}
                 className="flex-1 sm:flex-none"
               >
                 <Check className="mr-2 h-4 w-4" />
@@ -129,7 +129,7 @@ const UserCard = ({ user, onAprovar, onRejeitar, onEdit, onDelete }) => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => onRejeitar(user._id)}
+                onClick={() => onRejeitar(user.id)}
                 className="flex-1 sm:flex-none"
               >
                 <X className="mr-2 h-4 w-4" />
@@ -149,7 +149,7 @@ const UserCard = ({ user, onAprovar, onRejeitar, onEdit, onDelete }) => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onDelete(user._id)}
+            onClick={() => onDelete(user.id)}
             className="flex-1 sm:flex-none text-red-600 hover:text-red-600"
           >
             <Trash2 className="mr-2 h-4 w-4" />
@@ -216,7 +216,7 @@ const UsuariosPage = () => {
   const handleSaveEdit = async (formData) => {
     try {
       setSaving(true);
-      await userService.atualizar(editingUser._id, formData);
+      await userService.atualizar(editingUser.id, formData);
       toast.success('Usuário atualizado!');
       setIsModalOpen(false);
       setEditingUser(null);
@@ -255,7 +255,6 @@ const UsuariosPage = () => {
   return (
     <Layout>
       <div className="space-y-8 animate-in">
-        {/* Header */}
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Gestão de Usuários</h1>
           <p className="text-muted-foreground mt-2">
@@ -263,7 +262,6 @@ const UsuariosPage = () => {
           </p>
         </div>
 
-        {/* Stats */}
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg border bg-card p-4 sm:p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
@@ -314,7 +312,6 @@ const UsuariosPage = () => {
           </div>
         </div>
 
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -325,7 +322,6 @@ const UsuariosPage = () => {
           />
         </div>
 
-        {/* Users Grid - Responsivo */}
         {filteredUsuarios.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg">
             <UsersIcon className="mb-4 h-16 w-16 text-muted-foreground/50" />
@@ -340,7 +336,7 @@ const UsuariosPage = () => {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredUsuarios.map((user) => (
               <UserCard
-                key={user._id}
+                key={user.id}
                 user={user}
                 onAprovar={handleAprovar}
                 onRejeitar={handleRejeitar}
@@ -352,7 +348,6 @@ const UsuariosPage = () => {
         )}
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

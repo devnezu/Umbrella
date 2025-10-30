@@ -90,7 +90,7 @@ const DashboardCoordenacao = () => {
       toast.info('Gerando PDF...', {
         description: 'Aguarde alguns instantes'
       });
-      const blob = await calendarioService.gerarPDF(cal._id);
+      const blob = await calendarioService.gerarPDF(cal.id);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -128,7 +128,6 @@ const DashboardCoordenacao = () => {
   return (
     <Layout>
       <div className="space-y-8 animate-in">
-        {/* Header */}
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Painel da Coordenação</h1>
           <p className="text-muted-foreground mt-2">
@@ -136,7 +135,6 @@ const DashboardCoordenacao = () => {
           </p>
         </div>
 
-        {/* Stats */}
         {stats && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
@@ -201,7 +199,6 @@ const DashboardCoordenacao = () => {
           </div>
         )}
 
-        {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -225,7 +222,6 @@ const DashboardCoordenacao = () => {
           </Select>
         </div>
 
-        {/* Calendários */}
         {filteredCalendarios.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg">
             <FileText className="mb-4 h-16 w-16 text-muted-foreground/50" />
@@ -240,7 +236,7 @@ const DashboardCoordenacao = () => {
           <div className="space-y-4">
             {filteredCalendarios.map((cal) => (
               <div
-                key={cal._id}
+                key={cal.id}
                 className="rounded-lg border bg-card p-6 hover:shadow-md transition-all"
               >
                 <div className="space-y-4">
@@ -293,7 +289,7 @@ const DashboardCoordenacao = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigate(`/coordenacao/visualizar/${cal._id}`)}
+                      onClick={() => navigate(`/coordenacao/visualizar/${cal.id}`)}
                     >
                       <Eye className="mr-2 h-4 w-4" />
                       Visualizar
@@ -308,14 +304,14 @@ const DashboardCoordenacao = () => {
                     </Button>
                     {cal.status === 'enviado' && (
                       <>
-                        <Button size="sm" onClick={() => handleAprovar(cal._id)}>
+                        <Button size="sm" onClick={() => handleAprovar(cal.id)}>
                           <CheckCircle className="mr-2 h-4 w-4" />
                           Aprovar
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAjusteDialog({ open: true, calendarioId: cal._id })}
+                          onClick={() => setAjusteDialog({ open: true, calendarioId: cal.id })}
                         >
                           <XCircle className="mr-2 h-4 w-4" />
                           Solicitar Ajuste
@@ -330,7 +326,6 @@ const DashboardCoordenacao = () => {
         )}
       </div>
 
-      {/* Dialog de Ajuste */}
       <Dialog open={ajusteDialog.open} onOpenChange={(open) => setAjusteDialog({ ...ajusteDialog, open })}>
         <DialogContent>
           <DialogHeader>

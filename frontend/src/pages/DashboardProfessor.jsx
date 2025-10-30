@@ -76,7 +76,6 @@ const DashboardProfessor = () => {
   return (
     <Layout>
       <div className="space-y-8 animate-in">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold tracking-tight">Meus Calendários</h1>
@@ -90,7 +89,6 @@ const DashboardProfessor = () => {
           </Button>
         </div>
 
-        {/* Stats */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
@@ -141,7 +139,6 @@ const DashboardProfessor = () => {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -165,7 +162,6 @@ const DashboardProfessor = () => {
           </Select>
         </div>
 
-        {/* Calendários */}
         {filteredCalendarios.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg">
             <FileText className="mb-4 h-16 w-16 text-muted-foreground/50" />
@@ -186,7 +182,7 @@ const DashboardProfessor = () => {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredCalendarios.map((cal) => (
               <div
-                key={cal._id}
+                key={cal.id}
                 className="rounded-lg border bg-card p-6 hover:shadow-md transition-all"
               >
                 <div className="space-y-4">
@@ -247,7 +243,7 @@ const DashboardProfessor = () => {
                           variant="outline"
                           size="sm"
                           className="flex-1"
-                          onClick={() => navigate(`/professor/editar/${cal._id}`)}
+                          onClick={() => navigate(`/professor/editar/${cal.id}`)}
                         >
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
@@ -255,7 +251,7 @@ const DashboardProfessor = () => {
                         <Button
                           size="sm"
                           className="flex-1"
-                          onClick={() => handleEnviar(cal._id)}
+                          onClick={() => handleEnviar(cal.id)}
                         >
                           <Send className="mr-2 h-4 w-4" />
                           Enviar
@@ -266,7 +262,7 @@ const DashboardProfessor = () => {
                         variant="outline"
                         size="sm"
                         className="w-full"
-                        onClick={() => navigate(`/professor/visualizar/${cal._id}`)}
+                        onClick={() => navigate(`/professor/visualizar/${cal.id}`)}
                       >
                         <Eye className="mr-2 h-4 w-4" />
                         Visualizar

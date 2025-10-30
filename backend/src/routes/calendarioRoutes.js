@@ -23,7 +23,7 @@ const validarCalendario = [
   body('consolidacao.criterios').isLength({ min: 10 }).withMessage('Critérios da Consolidação devem ter pelo menos 10 caracteres')
 ];
 
-router.get('/', proteger, checkPermission('calendario:read-all'), calendarioController.listar);
+router.get('/', proteger, calendarioController.listar);
 router.get('/estatisticas', proteger, checkPermission('stats:view'), calendarioController.estatisticas);
 router.get('/calendario-geral', proteger, checkPermission('reports:view'), calendarioController.calendarioGeral);
 router.get('/:id', proteger, calendarioController.buscarPorId);
