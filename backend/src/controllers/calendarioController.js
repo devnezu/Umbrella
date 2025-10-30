@@ -1,5 +1,6 @@
 const Calendario = require('../models/Calendario');
 const { validationResult } = require('express-validator');
+const { toCalendarioDTO } = require('../dtos/calendario.dto');
 
 exports.criar = async (req, res) => {
   const errors = validationResult(req);
@@ -12,9 +13,9 @@ exports.criar = async (req, res) => {
     professor: req.user.id
   });
 
-  await calendario.populate('professor', 'nome email');
+  await calendario.populate('professor');
 
-  res.status(201).json(calendario);
+  res.status(201).json(toCalendarioDTO(calendario));
 };
 
 exports.listar = async (req, res) => {
@@ -36,15 +37,15 @@ exports.listar = async (req, res) => {
   }
 
   const calendarios = await Calendario.find(filtro)
-    .populate('professor', 'nome email disciplinas')
+    .populate('professor')
     .sort({ turma: 1, disciplina: 1 });
 
-  res.json(calendarios);
+  res.json(calendarios.map(toCalendarioDTO));
 };
 
 exports.buscarPorId = async (req, res) => {
   const calendario = await Calendario.findById(req.params.id)
-    .populate('professor', 'nome email disciplinas turmas');
+    .populate('professor');
 
   if (!calendario) {
     return res.status(404).json({ mensagem: 'Calendário não encontrado' });
@@ -54,7 +55,7 @@ exports.buscarPorId = async (req, res) => {
     return res.status(403).json({ mensagem: 'Acesso negado' });
   }
 
-  res.json(calendario);
+  res.json(toCalendarioDTO(calendario));
 };
 
 exports.atualizar = async (req, res) => {
@@ -78,9 +79,9 @@ exports.atualizar = async (req, res) => {
   Object.assign(calendario, req.body);
 
   await calendario.save();
-  await calendario.populate('professor', 'nome email');
+  await calendario.populate('professor');
 
-  res.json(calendario);
+  res.json(toCalendarioDTO(calendario));
 };
 
 exports.enviar = async (req, res) => {
@@ -102,9 +103,9 @@ exports.enviar = async (req, res) => {
 
   calendario.status = 'enviado';
   await calendario.save();
-  await calendario.populate('professor', 'nome email');
+  await calendario.populate('professor');
 
-  res.json(calendario);
+  res.json(toCalendarioDTO(calendario));
 };
 
 exports.aprovar = async (req, res) => {
@@ -116,9 +117,9 @@ exports.aprovar = async (req, res) => {
 
   calendario.status = 'aprovado';
   await calendario.save();
-  await calendario.populate('professor', 'nome email');
+  await calendario.populate('professor');
 
-  res.json(calendario);
+  res.json(toCalendarioDTO(calendario));
 };
 
 exports.solicitarAjuste = async (req, res) => {
@@ -133,9 +134,9 @@ exports.solicitarAjuste = async (req, res) => {
   calendario.status = 'rascunho';
   calendario.comentarioCoordenacao = comentarioCoordenacao || '';
   await calendario.save();
-  await calendario.populate('professor', 'nome email');
+  await calendario.populate('professor');
 
-  res.json(calendario);
+  res.json(toCalendarioDTO(calendario));
 };
 
 exports.deletar = async (req, res) => {

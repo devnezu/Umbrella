@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { toUserDTO, toUserProfileDTO } = require('../dtos/user.dto');
 
 const gerarToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -32,12 +33,9 @@ exports.login = async (req, res) => {
 
   const token = gerarToken(user._id);
 
-  const userData = user.toObject();
-  delete userData.senha;
-
   res.json({
     token,
-    user: userData
+    user: toUserProfileDTO(user)
   });
 };
 
@@ -74,7 +72,7 @@ exports.perfil = async (req, res) => {
     return res.status(404).json({ mensagem: 'Usuário não encontrado' });
   }
 
-  res.json(user);
+  res.json(toUserProfileDTO(user));
 };
 
 exports.atualizarPerfil = async (req, res) => {
@@ -100,12 +98,12 @@ exports.atualizarPerfil = async (req, res) => {
 
   const updatedUser = await user.save();
 
-  res.json(updatedUser);
+  res.json(toUserProfileDTO(updatedUser));
 };
 
 exports.listarUsuarios = async (req, res) => {
   const users = await User.find({}).sort({ createdAt: -1 });
-  res.json(users);
+  res.json(users.map(toUserDTO));
 };
 
 exports.atualizarUsuario = async (req, res) => {
@@ -124,7 +122,7 @@ exports.atualizarUsuario = async (req, res) => {
   user.status = status || user.status;
 
   const updatedUser = await user.save();
-  res.json(updatedUser);
+  res.json(toUserDTO(updatedUser));
 };
 
 exports.aprovarUsuario = async (req, res) => {

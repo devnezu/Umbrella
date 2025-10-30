@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const calendarioController = require('../controllers/calendarioController');
 const { proteger } = require('../middlewares/authMiddleware');
-const { checkRole } = require('../middlewares/rbacMiddleware');
+const { checkPermission } = require('../middlewares/rbacMiddleware');
 const { body } = require('express-validator');
 
 const validarCalendario = [
@@ -23,19 +23,16 @@ const validarCalendario = [
   body('consolidacao.criterios').isLength({ min: 10 }).withMessage('Critérios da Consolidação devem ter pelo menos 10 caracteres')
 ];
 
-const adminCoord = checkRole('admin', 'coordenacao');
-
-router.get('/', proteger, calendarioController.listar);
-router.get('/estatisticas', proteger, adminCoord, calendarioController.estatisticas);
-router.get('/calendario-geral', proteger, adminCoord, calendarioController.calendarioGeral);
+router.get('/', proteger, checkPermission('calendario:read-all'), calendarioController.listar);
+router.get('/estatisticas', proteger, checkPermission('stats:view'), calendarioController.estatisticas);
+router.get('/calendario-geral', proteger, checkPermission('reports:view'), calendarioController.calendarioGeral);
 router.get('/:id', proteger, calendarioController.buscarPorId);
-router.post('/', proteger, validarCalendario, calendarioController.criar);
-router.put('/:id', proteger, calendarioController.atualizar);
-router.delete('/:id', proteger, calendarioController.deletar);
+router.post('/', proteger, checkPermission('calendario:create'), validarCalendario, calendarioController.criar);
+router.put('/:id', proteger, checkPermission('calendario:update'), calendarioController.atualizar);
+router.delete('/:id', proteger, checkPermission('calendario:delete'), calendarioController.deletar);
 
-router.patch('/:id/enviar', proteger, checkRole('professor'), calendarioController.enviar);
-
-router.patch('/:id/aprovar', proteger, adminCoord, calendarioController.aprovar);
-router.patch('/:id/solicitar-ajuste', proteger, adminCoord, calendarioController.solicitarAjuste);
+router.patch('/:id/enviar', proteger, checkPermission('calendario:send'), calendarioController.enviar);
+router.patch('/:id/aprovar', proteger, checkPermission('calendario:approve'), calendarioController.aprovar);
+router.patch('/:id/solicitar-ajuste', proteger, checkPermission('calendario:reject'), calendarioController.solicitarAjuste);
 
 module.exports = router;

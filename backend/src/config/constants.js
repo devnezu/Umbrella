@@ -1,35 +1,28 @@
-// Permissões do sistema
 const PERMISSIONS = {
-  // Calendários
   'calendario:create': 'Criar calendários',
-  'calendario:read': 'Visualizar calendários',
-  'calendario:update': 'Atualizar calendários',
-  'calendario:delete': 'Deletar calendários',
+  'calendario:read': 'Visualizar próprios calendários',
+  'calendario:update': 'Atualizar próprios calendários',
+  'calendario:delete': 'Deletar próprios calendários',
   'calendario:send': 'Enviar calendários para aprovação',
   'calendario:approve': 'Aprovar calendários',
   'calendario:reject': 'Rejeitar/solicitar ajustes em calendários',
   'calendario:read-all': 'Visualizar todos os calendários',
 
-  // PDFs
   'pdf:generate': 'Gerar PDFs',
   'pdf:generate-all': 'Gerar PDFs consolidados',
 
-  // Usuários
   'user:create': 'Criar usuários',
-  'user:read': 'Visualizar usuários',
+  'user:read': 'Visualizar próprios dados',
   'user:update': 'Atualizar usuários',
   'user:delete': 'Deletar usuários',
   'user:read-all': 'Visualizar todos os usuários',
 
-  // Relatórios e Estatísticas
   'reports:view': 'Visualizar relatórios',
   'stats:view': 'Visualizar estatísticas',
 
-  // Configurações
   'settings:manage': 'Gerenciar configurações do sistema',
 };
 
-// Roles e suas permissões
 const ROLES = {
   admin: {
     name: 'Administrador',
@@ -49,6 +42,8 @@ const ROLES = {
       'pdf:generate',
       'pdf:generate-all',
       'user:read-all',
+      'user:update',
+      'user:delete',
       'reports:view',
       'stats:view'
     ]
@@ -135,13 +130,6 @@ module.exports = {
 
   BIMESTRES: [1, 2, 3, 4],
 
-  // Sistema RBAC
   PERMISSIONS,
   ROLES,
-
-  // Helper para verificar permissão
-  hasPermission: (role, permission) => {
-    const roleData = ROLES[role];
-    return roleData && roleData.permissions.includes(permission);
-  }
 };
