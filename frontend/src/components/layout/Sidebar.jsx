@@ -225,7 +225,7 @@ const Sidebar = () => {
         <SidebarContent />
 
         {/* Floating Action Buttons na borda da sidebar */}
-        <div className="absolute top-1/2 -translate-y-1/2 -right-3 flex flex-col gap-3 z-50">
+        <div className="absolute top-20 -right-3 flex flex-col gap-3 z-50">
           {/* Theme Toggle Button */}
           <TooltipProvider delayDuration={0}>
             <Tooltip>
@@ -234,7 +234,7 @@ const Sidebar = () => {
                   variant="default"
                   size="icon"
                   onClick={toggleTheme}
-                  className="h-8 w-8 rounded-full shadow-lg bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 transition-all hover:scale-110 border-2 border-background"
+                  className="h-8 w-8 rounded-md shadow-lg bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 transition-all hover:scale-110 border-2 border-background"
                 >
                   {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                 </Button>
@@ -253,7 +253,7 @@ const Sidebar = () => {
                   variant="default"
                   size="icon"
                   onClick={toggleSidebar}
-                  className="h-8 w-8 rounded-full shadow-lg bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800 hover:from-slate-700 hover:via-slate-800 hover:to-slate-900 transition-all hover:scale-110 border-2 border-background"
+                  className="h-8 w-8 rounded-md shadow-lg bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800 hover:from-slate-700 hover:via-slate-800 hover:to-slate-900 transition-all hover:scale-110 border-2 border-background"
                 >
                   {sidebarCollapsed ? <PanelLeftOpen className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
                 </Button>
