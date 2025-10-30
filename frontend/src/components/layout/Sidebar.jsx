@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { cn } from '../../lib/utils';
 import {
-  LayoutDashboard, Users, Settings, ChevronLeft,
-  ChevronRight, Moon, Sun, LogOut, GraduationCap
+  LayoutDashboard, Users, Settings, PanelLeftClose,
+  PanelLeftOpen, Moon, Sun, LogOut, GraduationCap, Search
 } from 'lucide-react';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
@@ -18,6 +19,21 @@ const Sidebar = () => {
     isMobileSidebarOpen, setIsMobileSidebarOpen
   } = useTheme();
   const location = useLocation();
+  const searchInputRef = useRef(null);
+
+  // Atalho de teclado 'P' para focar na barra de pesquisa
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      // Verifica se a tecla 'P' foi pressionada e não está em um input/textarea
+      if (e.key === 'p' && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
 
   const getMenuItems = () => {
     const role = user?.role;
@@ -47,25 +63,53 @@ const Sidebar = () => {
   const SidebarContent = () => (
     <div className="flex h-full flex-col bg-card border-r">
       {/* Header */}
-      <div className="flex h-16 items-center justify-between border-b px-4">
-        <Link to="/" className="flex items-center gap-2" onClick={handleLinkClick}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700">
-            <GraduationCap className="h-5 w-5 text-white" />
-          </div>
-          {!sidebarCollapsed && (
+      <div className="flex h-16 items-center justify-between px-4">
+        {!sidebarCollapsed && (
+          <Link to="/" className="flex items-center gap-2" onClick={handleLinkClick}>
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700">
+              <GraduationCap className="h-5 w-5 text-white" />
+            </div>
             <span className="text-lg font-bold tracking-tight">ScholarSync</span>
-          )}
-        </Link>
+          </Link>
+        )}
         {!sidebarCollapsed && (
           <Button variant="ghost" size="icon" className="hidden md:flex h-8 w-8" onClick={toggleSidebar}>
-            <ChevronLeft className="h-4 w-4" />
+            <PanelLeftClose className="h-4 w-4" />
           </Button>
         )}
         {sidebarCollapsed && (
-          <Button variant="ghost" size="icon" className="hidden md:flex h-8 w-8" onClick={toggleSidebar}>
-            <ChevronRight className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="hidden md:flex h-8 w-8 mx-auto" onClick={toggleSidebar}>
+            <PanelLeftOpen className="h-4 w-4" />
           </Button>
         )}
+      </div>
+
+      {/* Barra de Pesquisa com efeito de profundidade */}
+      <div className="px-3 pb-4">
+        <div className="relative">
+          <div className="absolute inset-0 bg-black/20 dark:bg-black/40 rounded-lg blur-sm" />
+          <div className="relative bg-muted/80 dark:bg-muted/60 rounded-lg shadow-inner">
+            <div className="relative flex items-center">
+              <Search className={cn(
+                "absolute h-4 w-4 text-muted-foreground transition-all",
+                sidebarCollapsed ? "left-1/2 -translate-x-1/2" : "left-3"
+              )} />
+              {!sidebarCollapsed && (
+                <Input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Pesquisar... (P)"
+                  className="pl-9 bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 h-9"
+                />
+              )}
+              {sidebarCollapsed && (
+                <div className="w-full h-9 flex items-center justify-center cursor-pointer" onClick={toggleSidebar}>
+                  <span className="sr-only">Pesquisar</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Navigation */}
