@@ -10,17 +10,23 @@ const validarCalendario = [
   body('disciplina').notEmpty().withMessage('Disciplina é obrigatória'),
   body('bimestre').isInt({ min: 1, max: 4 }).withMessage('Bimestre deve ser entre 1 e 4'),
   body('ano').isInt({ min: 2020 }).withMessage('Ano inválido'),
+  
+  // AV1
   body('av1.data').isISO8601().withMessage('Data da AV1 inválida'),
   body('av1.instrumento').notEmpty().withMessage('Instrumento da AV1 é obrigatório'),
   body('av1.conteudo').isLength({ min: 10 }).withMessage('Conteúdo da AV1 deve ter pelo menos 10 caracteres'),
   body('av1.criterios').isLength({ min: 10 }).withMessage('Critérios da AV1 devem ter pelo menos 10 caracteres'),
+  
+  // AV2
   body('av2.data').isISO8601().withMessage('Data da AV2 inválida'),
   body('av2.instrumento').notEmpty().withMessage('Instrumento da AV2 é obrigatório'),
   body('av2.conteudo').isLength({ min: 10 }).withMessage('Conteúdo da AV2 deve ter pelo menos 10 caracteres'),
   body('av2.criterios').isLength({ min: 10 }).withMessage('Critérios da AV2 devem ter pelo menos 10 caracteres'),
+  
+  // Consolidação
   body('consolidacao.data').isISO8601().withMessage('Data da Consolidação inválida'),
-  body('consolidacao.conteudo').isLength({ min: 10 }).withMessage('Conteúdo da Consolidação deve ter pelo menos 10 caracteres'),
-  body('consolidacao.criterios').isLength({ min: 10 }).withMessage('Critérios da Consolidação devem ter pelo menos 10 caracteres')
+  body('consolidacao.conteudo').isLength({ min: 10 }).withMessage('Conteúdo da Consolidação deve ter pelo menos 10 caracteres')
+  // REMOVIDO: Validação de critérios da consolidação, pois agora é opcional
 ];
 
 router.get('/', proteger, calendarioController.listar);

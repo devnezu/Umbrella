@@ -33,7 +33,7 @@ const calendarioSchema = new mongoose.Schema({
     },
     instrumento: {
       type: String,
-      enum: ['Prova Impressa', 'Atividade', 'Lista de Exercícios', 'Trabalho', 'Apresentação'],
+      enum: ['Prova Impressa', 'Atividade', 'Lista de Exercícios', 'Trabalho', 'Apresentação', 'E-Class'],
       required: [true, 'Instrumento da AV1 é obrigatório']
     },
     conteudo: {
@@ -55,7 +55,7 @@ const calendarioSchema = new mongoose.Schema({
     },
     instrumento: {
       type: String,
-      enum: ['Prova Impressa', 'Atividade', 'Lista de Exercícios', 'Trabalho', 'Apresentação'],
+      enum: ['Prova Impressa', 'Atividade', 'Lista de Exercícios', 'Trabalho', 'Apresentação', 'E-Class'],
       required: [true, 'Instrumento da AV2 é obrigatório']
     },
     conteudo: {
@@ -82,8 +82,7 @@ const calendarioSchema = new mongoose.Schema({
     },
     criterios: {
       type: String,
-      required: [true, 'Critérios da Consolidação são obrigatórios'],
-      minlength: 10
+      default: '' // Agora é opcional e padrão vazio
     }
   },
 

@@ -39,7 +39,19 @@ function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <Toaster position="top-right" richColors closeButton expand={false} />
+          <Toaster 
+            position="top-center" 
+            richColors 
+            closeButton 
+            theme="system"
+            toastOptions={{
+              style: {
+                borderRadius: '0.75rem',
+                padding: '1rem',
+              },
+              className: 'font-medium'
+            }}
+          />
           <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginPage />} />

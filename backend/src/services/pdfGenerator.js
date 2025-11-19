@@ -2,266 +2,340 @@ const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs').promises;
 
-// Formatar data para DD/MM/YYYY
 const formatarData = (data) => {
-  const d = new Date(data);
-  const dia = String(d.getDate()).padStart(2, '0');
-  const mes = String(d.getMonth() + 1).padStart(2, '0');
-  const ano = d.getFullYear();
-  return `${dia}/${mes}/${ano}`;
+  if (!data) return 'XX.XX';
+  try {
+    const dateStr = data instanceof Date ? data.toISOString() : data;
+    const [year, month, day] = dateStr.split('T')[0].split('-');
+    return `${day}.${month}`;
+  } catch {
+    return 'XX.XX';
+  }
 };
 
-// Gerar HTML para um calendário
-const gerarHTML = (calendario) => {
-  const bimestreNomes = { 1: 'Primeiro', 2: 'Segundo', 3: 'Terceiro', 4: 'Quarto' };
-  const bimestreNome = bimestreNomes[calendario.bimestre];
+const LOGO_BASE64 = process.env.BASE_64 || '';
 
-  // Determinar segmento e ano
-  let segmento, anoTurma;
-  if (calendario.turma.includes('EM')) {
-    segmento = 'Ensino Médio';
-    anoTurma = calendario.turma.charAt(0);
-  } else {
-    segmento = 'Fundamental II';
-    anoTurma = calendario.turma.charAt(0);
+const gerarHTMLConsolidadoTurma = (calendarios, turma, bimestre, ano) => {
+  const bimestreNomes = { 1: '1º', 2: '2º', 3: '3º', 4: '4º' };
+  const bimestreLabel = bimestreNomes[bimestre] || bimestre;
+  
+  let segmento = 'ENSINO FUNDAMENTAL II';
+  if (turma.toUpperCase().includes('EM') || ['1', '2', '3'].some(v => turma.startsWith(v))) {
+     segmento = 'ENSINO MÉDIO';
   }
+
+  let rowsHtml = '';
+
+  calendarios.forEach(cal => {
+    const professorNome = cal.professor ? cal.professor.nome.toUpperCase() : 'PROFESSOR';
+    const disciplinaNome = cal.disciplina.toUpperCase();
+    
+    rowsHtml += `
+      <tr class="separator-row">
+        <td colspan="3" class="subject-header">
+          PROF. ${professorNome} – ${disciplinaNome}
+        </td>
+      </tr>
+    `;
+
+    rowsHtml += `
+      <tr>
+        <td class="col-data">
+          <div class="data-valor">${formatarData(cal.av1.data)}</div>
+          <div class="peso">(10,0)</div>
+        </td>
+        <td class="col-instrumento">
+          <div class="label-etapa">AV1:</div>
+          <div class="texto-conteudo"><strong>Instrumento:</strong> ${cal.av1.instrumento}</div>
+          ${cal.av1.conteudo ? `
+            <div class="texto-conteudo mt-2">
+              <strong>Fonte de Estudo:</strong><br>
+              ${cal.av1.conteudo.replace(/\n/g, '<br>')}
+            </div>` : ''}
+        </td>
+        <td class="col-criterios">
+          <div class="texto-conteudo">
+            ${cal.av1.criterios.replace(/\n/g, '<br>')}
+          </div>
+        </td>
+      </tr>
+    `;
+
+    rowsHtml += `
+      <tr>
+        <td class="col-data">
+          <div class="data-valor">${formatarData(cal.av2.data)}</div>
+          <div class="peso">(10,0)</div>
+        </td>
+        <td class="col-instrumento">
+          <div class="label-etapa">AV2:</div>
+          <div class="texto-conteudo"><strong>Instrumento:</strong> ${cal.av2.instrumento}</div>
+          ${cal.av2.conteudo ? `
+            <div class="texto-conteudo mt-2">
+              <strong>Fonte de Estudo:</strong><br>
+              ${cal.av2.conteudo.replace(/\n/g, '<br>')}
+            </div>` : ''}
+        </td>
+        <td class="col-criterios">
+          <div class="texto-conteudo">
+            ${cal.av2.criterios.replace(/\n/g, '<br>')}
+          </div>
+        </td>
+      </tr>
+    `;
+
+    rowsHtml += `
+      <tr>
+        <td class="col-data">
+          <div class="data-valor">${formatarData(cal.consolidacao.data)}</div>
+          <div class="peso">(10,0)</div>
+        </td>
+        <td class="col-instrumento">
+          <div class="label-etapa">REC BIMESTRAL:</div>
+           ${cal.consolidacao.conteudo ? `
+            <div class="texto-conteudo mt-2">
+              <strong>Fonte de Estudo:</strong><br>
+              ${cal.consolidacao.conteudo.replace(/\n/g, '<br>')}
+            </div>` : ''}
+        </td>
+        <td class="col-criterios rec-warning">
+          PLANO DE ESTUDO E CONSOLIDAÇÃO DA APRENDIZAGEM/RECUPERAÇÃO
+          <br>
+          (disponível no portal educacional – E-Class).
+          ${cal.consolidacao.criterios ? `<br><br><span style="color:#000; font-weight:normal;">${cal.consolidacao.criterios}</span>` : ''}
+        </td>
+      </tr>
+    `;
+  });
 
   return `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calendário Avaliativo - ${calendario.turma}</title>
   <style>
-    @page {
-      size: A4;
-      margin: 1cm;
-    }
-
-    * {
+    @page { margin: 1cm; size: A4; }
+    
+    * { box-sizing: border-box; }
+    
+    body { 
+      font-family: Arial, Helvetica, sans-serif; 
+      font-size: 10pt; 
       margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      font-size: 11pt;
-      line-height: 1.4;
-      color: #000;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact; 
     }
 
     .header {
+      position: relative;
+      height: 130px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #003D7A;
+      justify-content: center;
+      border-bottom: 3px solid #003366;
+      margin-bottom: 10px;
     }
-
-    .logo {
-      width: 120px;
+    
+    .logo-container {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+    
+    .logo-img {
       height: auto;
+      max-height: 120px;
+      width: auto;
+      max-width: 250px;
     }
-
-    .titulo-principal {
+    
+    .school-info {
       text-align: center;
-      background-color: #003D7A;
-      color: white;
-      padding: 12px;
-      margin-bottom: 15px;
-      font-size: 14pt;
+      color: #003366;
+      z-index: 1;
+    }
+    
+    .school-name {
+      font-size: 16pt;
       font-weight: bold;
+      text-transform: uppercase;
+    }
+    
+    .school-contact {
+      font-size: 10pt;
+      margin-top: 8px;
+      color: #444;
     }
 
-    .info-turma {
-      background-color: #FFA500;
-      color: white;
+    .banner {
+      background-color: #FFCC00;
+      color: #003366;
       padding: 8px;
-      margin-bottom: 15px;
+      text-align: center;
+      font-weight: 900;
+      font-size: 20pt;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .banner span {
+      background-color: #003366;
+      color: #fff;
+      font-size: 8pt;
+      padding: 2px 5px;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+
+    .title-bar {
+      background-color: #00FFFF;
+      color: #000;
       font-weight: bold;
       text-align: center;
-      font-size: 12pt;
+      padding: 5px;
+      font-size: 11pt;
+      border: 1px solid #000;
+      margin-bottom: 0;
+      text-transform: uppercase;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 15px;
+      table-layout: fixed;
     }
 
-    th {
-      background-color: #003D7A;
-      color: white;
-      padding: 10px;
-      text-align: left;
-      font-size: 10pt;
-      font-weight: bold;
+    th, td {
       border: 1px solid #000;
-    }
-
-    td {
-      padding: 10px;
-      border: 1px solid #000;
+      padding: 5px;
       vertical-align: top;
-      font-size: 10pt;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
 
-    .etapa-titulo {
-      background-color: #FFA500;
-      color: white;
-      font-weight: bold;
+    thead th {
+      background-color: #000080;
+      color: #fff;
       text-align: center;
-      padding: 8px;
-      font-size: 11pt;
-    }
-
-    .data-peso {
-      font-weight: bold;
-      color: #003D7A;
-    }
-
-    .instrucoes {
-      background-color: #FFF3CD;
-      border: 2px solid #FFA500;
-      padding: 10px;
-      margin-top: 15px;
       font-size: 9pt;
-      color: #856404;
+      text-transform: uppercase;
     }
 
-    .instrucoes strong {
-      color: #dc3545;
-      display: block;
-      margin-bottom: 5px;
-    }
-
-    .rodape {
-      margin-top: 20px;
-      text-align: right;
-      font-size: 10pt;
-    }
-
-    .assinatura {
-      margin-top: 30px;
+    .separator-row td {
+      background-color: #FFCC00;
+      color: #0000FF;
+      font-weight: bold;
       text-align: center;
+      text-transform: uppercase;
+      font-size: 10pt;
+      padding: 4px;
+    }
+
+    .col-data {
+      background-color: #FFCC99;
+      text-align: center;
+      width: 15%;
+      vertical-align: middle;
+    }
+
+    .col-instrumento {
+      width: 42.5%;
+      background-color: #fff;
+    }
+
+    .col-criterios {
+      width: 42.5%;
+      background-color: #fff;
+    }
+
+    .data-valor {
+      color: #FF0000;
+      font-weight: bold;
       font-size: 10pt;
     }
 
-    .linha-assinatura {
-      border-top: 1px solid #000;
-      width: 300px;
-      margin: 0 auto;
-      margin-top: 40px;
+    .peso {
+      font-size: 9pt;
+      font-weight: bold;
     }
+
+    .label-etapa {
+      font-weight: bold;
+      font-size: 9pt;
+      margin-bottom: 3px;
+    }
+
+    .texto-conteudo {
+      font-size: 9pt;
+      line-height: 1.3;
+      white-space: pre-wrap;
+    }
+
+    .mt-2 { margin-top: 8px; }
+
+    .rec-warning {
+      color: #FF0000;
+      font-weight: bold;
+      text-align: center;
+      font-size: 9pt;
+      vertical-align: middle;
+    }
+
+    tr { page-break-inside: avoid; }
   </style>
 </head>
 <body>
+
   <div class="header">
-    <div style="text-align: left;">
-      <strong>Educação Adventista</strong><br>
-      <small>Colégio Adventista de Cotia</small>
+    <div class="logo-container">
+       <img src="${LOGO_BASE64}" class="logo-img" alt="Logo" /> 
     </div>
-    <div style="text-align: right;">
-      <strong>Ano Letivo: ${calendario.ano}</strong>
+    <div class="school-info">
+      <div class="school-name">Colégio Adventista de Cotia</div>
+      <div class="school-contact">
+        Rua Rui Barbosa, 63 – Lajeado – Cotia/SP<br>
+        Tel.: 11 4573-3000
+      </div>
     </div>
   </div>
 
-  <div class="titulo-principal">
-    CALENDÁRIO AVALIATIVO - ${bimestreNome} Bimestre
+  <div class="banner">
+    <span>ENSINO QUE</span> TRANSFORMA <span style="background:none; color:#003366; font-size:10pt;">O MUNDO</span>
   </div>
 
-  <div class="info-turma">
-    ${segmento} - ${anoTurma}º Ano ${calendario.turma} | Disciplina: ${calendario.disciplina}
+  <div class="title-bar">
+    Calendário Avaliativo – ${bimestreLabel} Bimestre: ${segmento} – ${turma}
   </div>
 
   <table>
     <thead>
       <tr>
-        <th style="width: 20%;">DATA REALIZAÇÃO/ENTREGA (PESO)</th>
-        <th style="width: 40%;">INSTRUMENTO AVALIATIVO E FONTE DE ESTUDO</th>
-        <th style="width: 40%;">CRITÉRIOS PARA AVALIAÇÃO E DESCRIÇÃO DA ATIVIDADE</th>
+        <th>DATA<br>REALIZAÇÃO/<br>ENTREGA (PESO)</th>
+        <th>INSTRUMENTO AVALIATIVO<br>E FONTE DE ESTUDO</th>
+        <th>CRITÉRIOS PARA AVALIAÇÃO<br>E DESCRIÇÃO DA ATIVIDADE</th>
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td colspan="3" class="etapa-titulo">AV1 - PRIMEIRA ETAPA (0-10 pontos)</td>
-      </tr>
-      <tr>
-        <td class="data-peso">${formatarData(calendario.av1.data)}<br>(Peso: 10)</td>
-        <td>
-          <strong>Instrumento:</strong> ${calendario.av1.instrumento}<br><br>
-          <strong>Conteúdo/Habilidades:</strong><br>
-          ${calendario.av1.conteudo}
-        </td>
-        <td>${calendario.av1.criterios}</td>
-      </tr>
-
-      <tr>
-        <td colspan="3" class="etapa-titulo">AV2 - SEGUNDA ETAPA (0-10 pontos)</td>
-      </tr>
-      <tr>
-        <td class="data-peso">${formatarData(calendario.av2.data)}<br>(Peso: 10)</td>
-        <td>
-          <strong>Instrumento:</strong> ${calendario.av2.instrumento}<br><br>
-          <strong>Conteúdo/Habilidades:</strong><br>
-          ${calendario.av2.conteudo}
-        </td>
-        <td>${calendario.av2.criterios}</td>
-      </tr>
-
-      <tr>
-        <td colspan="3" class="etapa-titulo">CONSOLIDAÇÃO DA APRENDIZAGEM - RECUPERAÇÃO BIMESTRAL (0-10 pontos)</td>
-      </tr>
-      <tr>
-        <td class="data-peso">${formatarData(calendario.consolidacao.data)}<br>(Peso: 10)</td>
-        <td>
-          <strong>Conteúdo/Habilidades:</strong><br>
-          ${calendario.consolidacao.conteudo}
-        </td>
-        <td>${calendario.consolidacao.criterios}</td>
-      </tr>
+      ${rowsHtml}
     </tbody>
   </table>
 
-  ${calendario.observacoes ? `
-  <div style="margin-top: 10px; padding: 8px; background-color: #f8f9fa; border-left: 4px solid #003D7A;">
-    <strong>Observações:</strong><br>
-    ${calendario.observacoes}
-  </div>
-  ` : ''}
-
-  <div class="instrucoes">
-    <strong>INSTRUÇÕES IMPORTANTES:</strong>
-    • A média bimestral será calculada pela média aritmética simples entre AV1 e AV2.<br>
-    • A Consolidação da Aprendizagem (Recuperação) substitui a média bimestral caso o aluno obtenha nota superior.<br>
-    • Todas as atividades devem ser entregues nas datas estipuladas.<br>
-    • Em caso de ausência justificada, o aluno deverá procurar a coordenação pedagógica.
-  </div>
-
-  <div class="assinatura">
-    <div class="linha-assinatura"></div>
-    <strong>Josiane Mendonça</strong><br>
-    Coordenadora Pedagógica - Fundamental II e Ensino Médio<br>
-    Colégio Adventista de Cotia
-  </div>
-
-  <div class="rodape">
-    <small>Gerado em: ${formatarData(new Date())}</small>
-  </div>
 </body>
 </html>
   `;
 };
 
-// Gerar PDF individual
 exports.gerarPDF = async (calendario) => {
-  let browser;
+  return exports.gerarPDFConsolidado([calendario], calendario.turma, calendario.bimestre, calendario.ano);
+};
 
+exports.gerarPDFConsolidado = async (calendarios, turma, bimestre, ano) => {
+  let browser;
   try {
-    // Criar diretório temp se não existir
     const tempDir = path.join(__dirname, '../../temp');
     try {
       await fs.access(tempDir);
@@ -269,10 +343,8 @@ exports.gerarPDF = async (calendario) => {
       await fs.mkdir(tempDir, { recursive: true });
     }
 
-    // Gerar HTML
-    const html = gerarHTML(calendario);
+    const html = gerarHTMLConsolidadoTurma(calendarios, turma, bimestre, ano);
 
-    // Iniciar Puppeteer
     browser = await puppeteer.launch({
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -281,89 +353,20 @@ exports.gerarPDF = async (calendario) => {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    // Gerar PDF
-    const timestamp = Date.now();
-    const fileName = `calendario_${calendario.turma}_${calendario.disciplina}_${timestamp}.pdf`;
+    const fileName = `calendario_${turma.replace(/[^a-z0-9]/gi, '_')}_${bimestre}bim_${Date.now()}.pdf`;
     const pdfPath = path.join(tempDir, fileName);
 
     await page.pdf({
       path: pdfPath,
       format: 'A4',
       printBackground: true,
-      margin: {
-        top: '1cm',
-        right: '1cm',
-        bottom: '1cm',
-        left: '1cm'
-      }
+      margin: { top: '1cm', right: '0.5cm', bottom: '1cm', left: '0.5cm' }
     });
 
     await browser.close();
-
     return pdfPath;
   } catch (error) {
-    if (browser) {
-      await browser.close();
-    }
-    throw error;
-  }
-};
-
-// Gerar PDF consolidado
-exports.gerarPDFConsolidado = async (calendarios, turma, bimestre, ano) => {
-  let browser;
-
-  try {
-    const tempDir = path.join(__dirname, '../../temp');
-    try {
-      await fs.access(tempDir);
-    } catch {
-      await fs.mkdir(tempDir, { recursive: true });
-    }
-
-    // Gerar HTML consolidado (combinar vários calendários)
-    let htmlCompleto = '';
-
-    calendarios.forEach((calendario, index) => {
-      htmlCompleto += gerarHTML(calendario);
-
-      // Adicionar quebra de página entre calendários
-      if (index < calendarios.length - 1) {
-        htmlCompleto += '<div style="page-break-after: always;"></div>';
-      }
-    });
-
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
-    const page = await browser.newPage();
-    await page.setContent(htmlCompleto, { waitUntil: 'networkidle0' });
-
-    const timestamp = Date.now();
-    const fileName = `calendario_consolidado_${turma}_${bimestre}bim_${timestamp}.pdf`;
-    const pdfPath = path.join(tempDir, fileName);
-
-    await page.pdf({
-      path: pdfPath,
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '1cm',
-        right: '1cm',
-        bottom: '1cm',
-        left: '1cm'
-      }
-    });
-
-    await browser.close();
-
-    return pdfPath;
-  } catch (error) {
-    if (browser) {
-      await browser.close();
-    }
+    if (browser) await browser.close();
     throw error;
   }
 };

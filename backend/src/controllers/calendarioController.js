@@ -2,6 +2,8 @@ const Calendario = require('../models/Calendario');
 const { validationResult } = require('express-validator');
 const { toCalendarioDTO } = require('../dtos/calendario.dto');
 
+// ... (manter criar, listar, buscarPorId, atualizar iguais) ...
+
 exports.criar = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -76,7 +78,13 @@ exports.atualizar = async (req, res) => {
     }
   }
 
-  Object.assign(calendario, req.body);
+  const dadosAtualizacao = { ...req.body };
+  delete dadosAtualizacao.professor; 
+  delete dadosAtualizacao._id;
+  delete dadosAtualizacao.createdAt;
+  delete dadosAtualizacao.updatedAt;
+
+  Object.assign(calendario, dadosAtualizacao);
 
   await calendario.save();
   await calendario.populate('professor');
@@ -84,6 +92,7 @@ exports.atualizar = async (req, res) => {
   res.json(toCalendarioDTO(calendario));
 };
 
+// --- AQUI ESTÁ A MUDANÇA ---
 exports.enviar = async (req, res) => {
   const calendario = await Calendario.findById(req.params.id);
 
@@ -102,6 +111,9 @@ exports.enviar = async (req, res) => {
   }
 
   calendario.status = 'enviado';
+  // Limpa o comentário da coordenação pois o professor já fez o ajuste
+  calendario.comentarioCoordenacao = null; 
+  
   await calendario.save();
   await calendario.populate('professor');
 
@@ -162,6 +174,7 @@ exports.deletar = async (req, res) => {
   res.json({ mensagem: 'Calendário deletado com sucesso' });
 };
 
+// ... (manter estatisticas e calendarioGeral iguais) ...
 exports.estatisticas = async (req, res) => {
   const { ano, bimestre } = req.query;
 
