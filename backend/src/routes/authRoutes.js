@@ -1,19 +1,28 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { proteger } = require('../middlewares/authMiddleware');
-const { checkPermission } = require('../middlewares/rbacMiddleware');
+const { protect, authorize } = require('../middlewares/authMiddleware');
+const validate = require('../middlewares/validateRequest');
+const {
+  loginSchema,
+  registerSchema,
+  updateProfileSchema,
+  adminUpdateUserSchema
+} = require('../schemas/auth.schema');
 
-router.post('/login', authController.login);
-router.post('/registrar', authController.registrar);
+router.post('/login', validate(loginSchema), authController.login);
+router.post('/registrar', validate(registerSchema), authController.registrar);
 
-router.get('/perfil', proteger, authController.perfil);
-router.put('/perfil', proteger, authController.atualizarPerfil);
+router.use(protect);
 
-router.get('/usuarios', proteger, checkPermission('user:read-all'), authController.listarUsuarios);
-router.put('/usuarios/:id', proteger, checkPermission('user:update'), authController.atualizarUsuario);
-router.patch('/usuarios/:id/aprovar', proteger, checkPermission('user:update'), authController.aprovarUsuario);
-router.patch('/usuarios/:id/rejeitar', proteger, checkPermission('user:update'), authController.rejeitarUsuario);
-router.delete('/usuarios/:id', proteger, checkPermission('user:delete'), authController.deletarUsuario);
+router.get('/perfil', authController.perfil);
+router.patch('/perfil', validate(updateProfileSchema), authController.atualizarPerfil);
+
+// Rotas administrativas
+router.get('/users', authorize('admin'), authController.listarUsuarios);
+router.put('/users/:id', authorize('admin'), validate(adminUpdateUserSchema), authController.atualizarUsuario);
+router.patch('/users/:id/aprovar', authorize('admin'), authController.aprovarUsuario);
+router.patch('/users/:id/rejeitar', authorize('admin'), authController.rejeitarUsuario);
+router.delete('/users/:id', authorize('admin'), authController.deletarUsuario);
 
 module.exports = router;

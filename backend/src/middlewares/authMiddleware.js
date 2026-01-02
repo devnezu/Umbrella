@@ -1,14 +1,13 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-exports.proteger = async (req, res, next) => {
+exports.protect = async (req, res, next) => {
   let token;
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
       
-      // ✅ Verificação se o token foi extraído
       if (!token) {
         return res.status(401).json({ mensagem: 'Token não fornecido' });
       }
@@ -26,7 +25,17 @@ exports.proteger = async (req, res, next) => {
       return res.status(401).json({ mensagem: 'Token inválido ou expirado' });
     }
   } else {
-    // ✅ Tratamento explícito quando o header não está presente
     return res.status(401).json({ mensagem: 'Acesso negado. Token não fornecido.' });
   }
+};
+
+exports.authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({
+        mensagem: `Permissão negada. Requer função: ${roles.join(' ou ')}`
+      });
+    }
+    next();
+  };
 };

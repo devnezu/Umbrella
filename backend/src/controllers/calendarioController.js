@@ -1,13 +1,8 @@
 const Calendario = require('../models/Calendario');
-const { validationResult } = require('express-validator');
 const { toCalendarioDTO } = require('../dtos/calendario.dto');
 
 exports.criar = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ erros: errors.array() });
-  }
-
+  // Dados já validados pelo Zod e sanitizados
   const calendario = await Calendario.create({
     ...req.body,
     professor: req.user.id
@@ -29,8 +24,8 @@ exports.listar = async (req, res) => {
 
   if (turma) filtro.turma = turma;
   if (disciplina) filtro.disciplina = disciplina;
-  if (bimestre) filtro.bimestre = parseInt(bimestre);
-  if (ano) filtro.ano = parseInt(ano);
+  if (bimestre) filtro.bimestre = bimestre; // Já é number graças ao Zod
+  if (ano) filtro.ano = ano; // Já é number graças ao Zod
   if (status) filtro.status = status;
   if (professor && ['admin', 'coordenacao'].includes(req.user.role)) {
     filtro.professor = professor;

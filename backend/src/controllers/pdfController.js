@@ -40,16 +40,10 @@ exports.gerarPDFConsolidadoTurma = async (req, res) => {
   try {
     const { turma, bimestre, ano } = req.query;
 
-    if (!turma || !bimestre || !ano) {
-      return res.status(400).json({
-        mensagem: 'Turma, bimestre e ano são obrigatórios'
-      });
-    }
-
     const calendarios = await Calendario.find({
       turma,
-      bimestre: parseInt(bimestre),
-      ano: parseInt(ano),
+      bimestre, // Já é number via Zod
+      ano,      // Já é number via Zod
       status: 'aprovado'
     }).populate('professor', 'nome');
 
@@ -86,15 +80,9 @@ exports.gerarPDFTodasTurmas = async (req, res) => {
   try {
     const { bimestre, ano } = req.query;
 
-    if (!bimestre || !ano) {
-      return res.status(400).json({
-        mensagem: 'Bimestre e ano são obrigatórios'
-      });
-    }
-
     const calendarios = await Calendario.find({
-      bimestre: parseInt(bimestre),
-      ano: parseInt(ano),
+      bimestre,
+      ano,
       status: 'aprovado'
     }).populate('professor', 'nome')
       .sort({ turma: 1, disciplina: 1 });

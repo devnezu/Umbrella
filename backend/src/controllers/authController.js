@@ -42,10 +42,6 @@ exports.login = async (req, res) => {
 exports.registrar = async (req, res) => {
   const { nome, email, senha, role } = req.body;
 
-  if (!nome || !email || !senha) {
-    return res.status(400).json({ mensagem: 'Nome, email e senha são obrigatórios' });
-  }
-
   const userExiste = await User.findOne({ email });
 
   if (userExiste) {

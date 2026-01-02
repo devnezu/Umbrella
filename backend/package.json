@@ -9,20 +9,25 @@
     "seed": "node src/seeds/seedDatabase.js",
     "seed:admin": "node src/scripts/criarUsuarioInicial.js"
   },
-  "keywords": ["educacao", "calendario", "avaliacao"],
+  "keywords": [
+    "educacao",
+    "calendario",
+    "avaliacao"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "mongoose": "^8.0.0",
     "bcrypt": "^5.1.1",
-    "jsonwebtoken": "^9.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
     "express-validator": "^7.0.1",
-    "puppeteer": "^21.6.0",
     "helmet": "^7.1.0",
-    "express-rate-limit": "^7.1.5"
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.0",
+    "puppeteer": "^21.6.0",
+    "zod": "^4.3.4"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
