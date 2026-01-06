@@ -2,12 +2,14 @@
   "name": "calendario-avaliativo-backend",
   "version": "1.0.0",
   "description": "Backend do Sistema de Automação de Calendário Avaliativo Escolar",
-  "main": "src/server.js",
+  "main": "src/server.ts",
+  "type": "module",
   "scripts": {
-    "start": "bun src/server.js",
-    "dev": "bun --watch src/server.js",
-    "seed": "bun src/seeds/seedDatabase.js",
-    "seed:admin": "bun src/scripts/criarUsuarioInicial.js"
+    "start": "bun src/server.ts",
+    "dev": "bun --watch src/server.ts",
+    "seed": "bun src/seeds/seedDatabase.ts",
+    "seed:admin": "bun src/scripts/criarUsuarioInicial.ts",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "educacao",
@@ -28,5 +30,15 @@
     "mongoose": "^8.0.0",
     "puppeteer": "^21.6.0",
     "zod": "^4.3.4"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/mongoose": "^5.11.97",
+    "@types/node": "^25.0.3",
+    "bun-types": "^1.3.5",
+    "typescript": "^5.9.3"
   }
 }

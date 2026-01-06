@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git stash:*)",
+      "Bash(git add:*)",
+      "Bash(git branch:*)",
+      "Bash(where:*)",
+      "Bash(gemini /logout)",
+      "Bash(cat:*)",
+      "Bash(gcloud config:*)",
+      "Bash(env)",
+      "Bash(git commit:*)",
+      "Bash(bun:*)",
+      "Bash(node --version)",
+      "Bash(npm --version:*)",
+      "Bash(gemini --version:*)",
+      "Bash(git mv:*)",
+      "Bash(for:*)",
+      "Bash(do git mv \"$f\" \"$f%.js.ts\")",
+      "Bash(done)",
+      "Bash(do git mv \"$f\" \"$f%.jsx.tsx\")",
+      "Bash(ls:*)",
+      "Bash(while read f)",
+      "Bash(do [ -f \"$f\" ])",
+      "Bash(do mv \"$f\" \"$f%.jsx.tsx\")",
+      "Bash(python3:*)"
+    ]
+  }
+}
