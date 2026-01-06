@@ -23,7 +23,15 @@
       "Bash(while read f)",
       "Bash(do [ -f \"$f\" ])",
       "Bash(do mv \"$f\" \"$f%.jsx.tsx\")",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "WebSearch",
+      "Bash(node get-mongo-hosts.js:*)",
+      "Bash(timeout 10 bun run:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell:*)",
+      "Bash(timeout 8 bun run dev:*)"
     ]
   }
 }
