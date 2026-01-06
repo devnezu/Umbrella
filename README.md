@@ -18,6 +18,9 @@ Este sistema resolve o problema da criação manual de calendários avaliativos,
 
 ### Tecnologias Utilizadas
 
+#### Runtime
+- **Bun** - Runtime JavaScript ultrarrápido (substitui Node.js e npm)
+
 #### Frontend
 - React 18 com Vite
 - Tailwind CSS para estilização
@@ -29,12 +32,13 @@ Este sistema resolve o problema da criação manual de calendários avaliativos,
 - Lucide React para ícones
 
 #### Backend
-- Node.js + Express
+- Bun + Express
 - MongoDB + Mongoose
 - JWT para autenticação
 - bcrypt para hash de senhas
 - Puppeteer para geração de PDFs
 - express-validator para validações
+- Zod para validação de schemas
 
 ## Estrutura do Projeto
 
@@ -66,9 +70,11 @@ projeto-calendario-avaliativo/
 
 ### Pré-requisitos
 
-- Node.js 18+ instalado
+- **Bun** instalado ([instalar aqui](https://bun.sh))
 - MongoDB instalado e rodando
 - Git
+
+> **Nota:** Este projeto usa Bun como runtime. Bun é até 4x mais rápido que Node.js e compatível com o ecossistema npm.
 
 ### 1. Clonar o repositório
 
@@ -83,7 +89,7 @@ cd Umbrella
 cd backend
 
 # Instalar dependências
-npm install
+bun install
 
 # Configurar variáveis de ambiente
 cp .env.example .env
@@ -101,7 +107,7 @@ cp .env.example .env
 cd ../frontend
 
 # Instalar dependências
-npm install
+bun install
 
 # Configurar variáveis de ambiente
 cp .env.example .env
@@ -116,7 +122,7 @@ cp .env.example .env
 cd ../backend
 
 # Executar seed (cria usuários e dados de exemplo)
-npm run seed
+bun run seed
 ```
 
 ## Executar o Projeto
@@ -126,14 +132,16 @@ npm run seed
 ```bash
 cd backend
 
-# Modo desenvolvimento (com nodemon)
-npm run dev
+# Modo desenvolvimento (com hot reload automático)
+bun run dev
 
 # Ou modo produção
-npm start
+bun start
 ```
 
 O backend estará rodando em `http://localhost:5000`
+
+> **Nota:** Bun tem hot reload nativo com `--watch`, não precisa de nodemon!
 
 ### Frontend
 
@@ -141,7 +149,7 @@ O backend estará rodando em `http://localhost:5000`
 cd frontend
 
 # Modo desenvolvimento
-npm run dev
+bun run dev
 ```
 
 O frontend estará rodando em `http://localhost:3001`
@@ -269,19 +277,35 @@ Cada calendário contém 3 etapas por bimestre:
 
 ### Backend
 ```bash
-npm start       # Iniciar servidor
-npm run dev     # Modo desenvolvimento com nodemon
-npm run seed    # Popular banco de dados
+bun start           # Iniciar servidor
+bun run dev         # Modo desenvolvimento com hot reload
+bun run seed        # Popular banco de dados
+bun run seed:admin  # Criar apenas usuário admin
 ```
 
 ### Frontend
 ```bash
-npm run dev     # Servidor de desenvolvimento
-npm run build   # Build para produção
-npm run preview # Preview do build
+bun run dev     # Servidor de desenvolvimento
+bun run build   # Build para produção
+bun run preview # Preview do build
+bun run lint    # Executar linter
 ```
 
+## Performance com Bun
+
+Bun oferece melhorias significativas de performance:
+
+- ⚡ **Startup 4x mais rápido** que Node.js
+- 📦 **Instalação de dependências** até 30x mais rápida
+- 🔥 **Hot reload nativo** sem precisar de nodemon
+- 💾 **Menor uso de memória** comparado ao Node.js
+- ✅ **100% compatível** com pacotes npm
+
 ## Solução de Problemas
+
+### Bun não encontrado
+- Instale Bun: `curl -fsSL https://bun.sh/install | bash` (macOS/Linux)
+- Windows: `powershell -c "irm bun.sh/install.ps1|iex"`
 
 ### MongoDB não conecta
 - Verifique se o MongoDB está rodando
@@ -294,6 +318,22 @@ npm run preview # Preview do build
 ### Porta já em uso
 - Altere PORT no backend/.env
 - Altere porta no frontend/vite.config.js
+
+### Migração de Node.js para Bun (se necessário)
+
+Se você ainda estiver usando Node.js:
+
+```bash
+# Backend
+cd backend
+rm -rf node_modules package-lock.json yarn.lock
+bun install
+
+# Frontend
+cd ../frontend
+rm -rf node_modules package-lock.json yarn.lock
+bun install
+```
 
 ## Contribuindo
 

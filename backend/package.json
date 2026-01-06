@@ -4,10 +4,10 @@
   "description": "Backend do Sistema de Automação de Calendário Avaliativo Escolar",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "seed": "node src/seeds/seedDatabase.js",
-    "seed:admin": "node src/scripts/criarUsuarioInicial.js"
+    "start": "bun src/server.js",
+    "dev": "bun --watch src/server.js",
+    "seed": "bun src/seeds/seedDatabase.js",
+    "seed:admin": "bun src/scripts/criarUsuarioInicial.js"
   },
   "keywords": [
     "educacao",
@@ -28,8 +28,5 @@
     "mongoose": "^8.0.0",
     "puppeteer": "^21.6.0",
     "zod": "^4.3.4"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
   }
 }
