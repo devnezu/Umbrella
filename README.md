@@ -144,7 +144,7 @@ cd frontend
 npm run dev
 ```
 
-O frontend estará rodando em `http://localhost:3000`
+O frontend estará rodando em `http://localhost:3001`
 
 ## Credenciais de Acesso
 

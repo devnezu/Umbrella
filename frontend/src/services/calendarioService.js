@@ -51,6 +51,14 @@ const calendarioService = {
       responseType: 'blob'
     });
     return response.data;
+  },
+
+  async gerarPDFTurma(turma, bimestre, ano) {
+    const response = await api.get('/pdf/consolidado/turma', {
+      params: { turma, bimestre, ano },
+      responseType: 'blob'
+    });
+    return response.data;
   }
 };
 

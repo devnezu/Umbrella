@@ -8,10 +8,15 @@ import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import calendarioService from '../services/calendarioService';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, Eye, Download, Search, FileText, Clock, AlertCircle, Send } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, Download, Search, FileText, Clock, AlertCircle, Send, Printer } from 'lucide-react';
 import { formatarData } from '../utils/dateHelpers';
 import { Spinner } from '../components/ui/spinner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+
+const TURMAS = [
+  '6ºA', '6ºB', '6ºC', '6ºD', '7ºA', '7ºB', '7ºC', '8ºA', '8ºB', '8ºC', '8ºD', '9ºA', '9ºB', '9ºC', '9ºD',
+  '1ºEM-A', '1ºEM-B', '2ºEM-A', '2ºEM-B', '3ºEM-A', '3ºEM-B'
+];
 
 const DashboardCoordenacao = () => {
   const navigate = useNavigate();
@@ -21,6 +26,12 @@ const DashboardCoordenacao = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [ajusteDialog, setAjusteDialog] = useState({ open: false, calendarioId: null });
+  const [exportDialog, setExportDialog] = useState({ 
+    open: false, 
+    turma: '', 
+    bimestre: '2', 
+    ano: new Date().getFullYear() 
+  });
   const [comentario, setComentario] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -85,6 +96,42 @@ const DashboardCoordenacao = () => {
     }
   };
 
+  const handleExportTurma = async () => {
+    if (!exportDialog.turma) {
+      toast.error('Selecione uma turma');
+      return;
+    }
+    
+    try {
+      setSubmitting(true);
+      toast.info('Gerando PDF consolidado...', { description: 'Isso pode levar alguns segundos.' });
+      
+      const blob = await calendarioService.gerarPDFTurma(
+        exportDialog.turma, 
+        parseInt(exportDialog.bimestre), 
+        exportDialog.ano
+      );
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Calendario_${exportDialog.turma}_${exportDialog.bimestre}Bim.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('Download iniciado!');
+      setExportDialog({ ...exportDialog, open: false });
+    } catch (error) {
+      toast.error('Erro ao exportar', {
+        description: error.response?.data?.mensagem || 'Verifique se há calendários aprovados para esta turma.'
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleDownloadPDF = async (cal) => {
     try {
       toast.info('Gerando PDF...', {
@@ -133,6 +180,13 @@ const DashboardCoordenacao = () => {
           <p className="text-muted-foreground mt-2">
             Gerencie e aprove calendários avaliativos
           </p>
+        </div>
+        
+        <div className="flex justify-end">
+          <Button onClick={() => setExportDialog({ ...exportDialog, open: true })}>
+            <Printer className="mr-2 h-4 w-4" />
+            Baixar Calendário da Turma
+          </Button>
         </div>
 
         {stats && (
@@ -360,6 +414,83 @@ const DashboardCoordenacao = () => {
                 <>
                   <Send className="mr-2 h-4 w-4" />
                   Enviar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={exportDialog.open} onOpenChange={(open) => setExportDialog({ ...exportDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Exportar Calendário da Turma</DialogTitle>
+            <DialogDescription>
+              Gera um PDF único com todas as matérias da turma selecionada.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Turma</label>
+              <Select 
+                value={exportDialog.turma} 
+                onValueChange={(v) => setExportDialog({ ...exportDialog, turma: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a turma" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px]">
+                  {TURMAS.map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Bimestre</label>
+                <Select 
+                  value={String(exportDialog.bimestre)} 
+                  onValueChange={(v) => setExportDialog({ ...exportDialog, bimestre: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1º Bimestre</SelectItem>
+                    <SelectItem value="2">2º Bimestre</SelectItem>
+                    <SelectItem value="3">3º Bimestre</SelectItem>
+                    <SelectItem value="4">4º Bimestre</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Ano</label>
+                <Input 
+                  type="number" 
+                  value={exportDialog.ano} 
+                  onChange={(e) => setExportDialog({ ...exportDialog, ano: parseInt(e.target.value) })}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setExportDialog({ ...exportDialog, open: false })}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleExportTurma} disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" />
+                  Gerando...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Baixar PDF
                 </>
               )}
             </Button>

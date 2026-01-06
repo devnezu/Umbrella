@@ -8,8 +8,10 @@ import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import calendarioService from '../services/calendarioService';
+import gradeHorariaService from '../services/gradeHorariaService';
+import PDFPreview from '../components/calendario/PDFPreview';
 import { toast } from 'sonner';
-import { Save, ArrowLeft, Calendar, FileText, CheckCircle, Eye } from 'lucide-react';
+import { Save, ArrowLeft, FileText, CheckCircle, BookOpen, Eye, AlertTriangle, CalendarX } from 'lucide-react';
 import { Spinner } from '../components/ui/spinner';
 import { Separator } from '../components/ui/separator';
 import { formatarData } from '../utils/dateHelpers';
@@ -26,6 +28,7 @@ const CalendarioFormPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [gradeMap, setGradeMap] = useState({});
   const [formData, setFormData] = useState({
     turma: '',
     disciplina: '',
@@ -55,7 +58,23 @@ const CalendarioFormPage = () => {
     if (id) {
       carregarCalendario();
     }
+    carregarGrade();
   }, [id]);
+
+  const carregarGrade = async () => {
+    try {
+      const response = await gradeHorariaService.getGrade();
+      const map = {};
+      if (response.data) {
+        response.data.forEach(item => {
+          map[`${item.turma}-${item.disciplina}`] = item.dias;
+        });
+      }
+      setGradeMap(map);
+    } catch (error) {
+      console.error('Erro ao carregar grade:', error);
+    }
+  };
 
   const carregarCalendario = async () => {
     try {
@@ -122,6 +141,33 @@ const CalendarioFormPage = () => {
     }));
   };
 
+  const checkDiaAula = (dataStr) => {
+    if (!dataStr || !formData.turma || !formData.disciplina) return true;
+    
+    const key = `${formData.turma}-${formData.disciplina}`;
+    const diasPermitidos = gradeMap[key];
+    
+    if (!diasPermitidos || diasPermitidos.length === 0) return true; // Ignora se não tiver grade configurada
+
+    // Ajuste de fuso horário simples para pegar o dia correto
+    const date = new Date(dataStr);
+    // getDay() usa hora local do browser. O input type=date retorna YYYY-MM-DD.
+    // new Date('2023-10-27') retorna UTC 00:00. Se browser for -3, vira dia anterior.
+    // Melhor usar:
+    const [y, m, d] = dataStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d); // Mês é 0-indexado
+    const diaSemana = dateObj.getDay(); // 0=Dom, 1=Seg...
+    
+    return diasPermitidos.includes(diaSemana);
+  };
+
+  const WarningDiaInvalido = () => (
+    <div className="flex items-center gap-1 text-amber-600 text-xs mt-1.5 font-medium animate-in slide-in-from-top-1">
+      <CalendarX className="h-3.5 w-3.5" />
+      <span>Dia sem aula nesta turma (verifique sua grade)</span>
+    </div>
+  );
+
   if (loading && id) {
     return (
       <Layout>
@@ -176,7 +222,9 @@ const CalendarioFormPage = () => {
                       onChange={(e) => handleChange('turma', e.target.value)}
                       placeholder="Ex: 9º Ano A"
                       required
+                      className={!checkDiaAula(formData.av1.data) ? "border-amber-500 focus-visible:ring-amber-500" : ""}
                     />
+                    {!checkDiaAula(formData.av1.data) && <WarningDiaInvalido />}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="disciplina">Disciplina *</Label>
@@ -244,7 +292,9 @@ const CalendarioFormPage = () => {
                       value={formData.av1.data}
                       onChange={(e) => handleNestedChange('av1', 'data', e.target.value)}
                       required
+                      className={!checkDiaAula(formData.av1.data) ? "border-amber-500 focus-visible:ring-amber-500" : ""}
                     />
+                    {!checkDiaAula(formData.av1.data) && <WarningDiaInvalido />}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="av1Instrumento">Instrumento *</Label>
@@ -304,7 +354,9 @@ const CalendarioFormPage = () => {
                       value={formData.av2.data}
                       onChange={(e) => handleNestedChange('av2', 'data', e.target.value)}
                       required
+                      className={!checkDiaAula(formData.av2.data) ? "border-amber-500 focus-visible:ring-amber-500" : ""}
                     />
+                    {!checkDiaAula(formData.av2.data) && <WarningDiaInvalido />}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="av2Instrumento">Instrumento *</Label>
@@ -363,8 +415,9 @@ const CalendarioFormPage = () => {
                     value={formData.consolidacao.data}
                     onChange={(e) => handleNestedChange('consolidacao', 'data', e.target.value)}
                     required
-                    className="max-w-xs"
+                    className={!checkDiaAula(formData.consolidacao.data) ? "border-amber-500 focus-visible:ring-amber-500 max-w-xs" : "max-w-xs"}
                   />
+                  {!checkDiaAula(formData.consolidacao.data) && <WarningDiaInvalido />}
                 </div>
 
                 <div className="space-y-2">

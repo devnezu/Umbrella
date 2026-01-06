@@ -1,8 +1,59 @@
 const Calendario = require('../models/Calendario');
 const { toCalendarioDTO } = require('../dtos/calendario.dto');
+const { TURMAS } = require('../config/constants');
+
+// Helper para verificar sobrecarga de avaliações
+async function verificarSobrecarga(turma, datesToCheck, excludeId = null) {
+  const isEnsinoMedio = TURMAS.ENSINO_MEDIO.includes(turma);
+  const limit = isEnsinoMedio ? 3 : 2;
+
+  for (const { type, date } of datesToCheck) {
+    if (!date) continue;
+
+    const checkDate = new Date(date);
+    if (isNaN(checkDate.getTime())) continue;
+
+    // Ajustar para comparar o dia inteiro (independente de hora)
+    const startOfDay = new Date(checkDate); startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(checkDate); endOfDay.setUTCHours(23, 59, 59, 999);
+
+    const query = {
+      turma,
+      $or: [
+        { 'av1.data': { $gte: startOfDay, $lte: endOfDay } },
+        { 'av2.data': { $gte: startOfDay, $lte: endOfDay } },
+        { 'consolidacao.data': { $gte: startOfDay, $lte: endOfDay } }
+      ]
+    };
+
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+
+    const count = await Calendario.countDocuments(query);
+
+    if (count >= limit) {
+      const existing = await Calendario.find(query).select('disciplina');
+      const subjects = existing.map(c => c.disciplina).join(', ');
+      throw new Error(`Limite de avaliações (${limit}) excedido para ${type} em ${checkDate.toLocaleDateString('pt-BR')}. Já existem: ${subjects}.`);
+    }
+  }
+}
 
 exports.criar = async (req, res) => {
   // Dados já validados pelo Zod e sanitizados
+
+  // Validação de Sobrecarga
+  try {
+    const dates = [
+      { type: 'AV1', date: req.body.av1.data },
+      { type: 'AV2', date: req.body.av2.data },
+      { type: 'Consolidação', date: req.body.consolidacao.data }
+    ];
+    await verificarSobrecarga(req.body.turma, dates);
+  } catch (err) {
+    return res.status(400).json({ mensagem: err.message });
+  }
   const calendario = await Calendario.create({
     ...req.body,
     professor: req.user.id
@@ -71,7 +122,32 @@ exports.atualizar = async (req, res) => {
     }
   }
 
-  Object.assign(calendario, req.body);
+  const dadosAtualizacao = { ...req.body };
+  delete dadosAtualizacao.professor;
+  delete dadosAtualizacao._id;
+  delete dadosAtualizacao.createdAt;
+  delete dadosAtualizacao.updatedAt;
+
+  // Validação de Sobrecarga na Edição
+  try {
+    // Mesclar dados atuais com atualizações para verificar o estado final
+    const av1Data = dadosAtualizacao.av1?.data || calendario.av1.data;
+    const av2Data = dadosAtualizacao.av2?.data || calendario.av2.data;
+    const consData = dadosAtualizacao.consolidacao?.data || calendario.consolidacao.data;
+
+    const datesToCheck = [
+      { type: 'AV1', date: av1Data },
+      { type: 'AV2', date: av2Data },
+      { type: 'Consolidação', date: consData }
+    ];
+
+    // Passar ID atual para excluir da contagem (evitar falso positivo consigo mesmo)
+    await verificarSobrecarga(calendario.turma, datesToCheck, calendario._id);
+  } catch (err) {
+    return res.status(400).json({ mensagem: err.message });
+  }
+
+  Object.assign(calendario, dadosAtualizacao);
 
   await calendario.save();
   await calendario.populate('professor');

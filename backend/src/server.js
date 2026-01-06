@@ -10,6 +10,7 @@ const errorHandler = require('./middlewares/errorHandler');
 const authRoutes = require('./routes/authRoutes');
 const calendarioRoutes = require('./routes/calendarioRoutes');
 const pdfRoutes = require('./routes/pdfRoutes');
+const gradeHorariaRoutes = require('./routes/gradeHorariaRoutes');
 
 // Inicializar Express
 const app = express();
@@ -19,7 +20,7 @@ connectDatabase();
 
 // ✅ CORS - DEVE VIR PRIMEIRO, ANTES DE QUALQUER OUTRA COISA
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'http://localhost:3001',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -60,6 +61,7 @@ app.options('*', cors());
 app.use('/api/auth', authRoutes);
 app.use('/api/calendarios', calendarioRoutes);
 app.use('/api/pdf', pdfRoutes);
+app.use('/api/grade-horaria', gradeHorariaRoutes);
 
 // Rota de health check
 app.get('/api/health', (req, res) => {
@@ -85,7 +87,7 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`📦 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 CORS habilitado para: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+  console.log(`🌐 CORS habilitado para: ${process.env.FRONTEND_URL || 'http://localhost:3001'}`);
 });
 
 // ✅ Tratamento gracioso de encerramento

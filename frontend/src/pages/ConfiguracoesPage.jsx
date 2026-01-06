@@ -10,6 +10,7 @@ import userService from '../services/userService';
 import { toast } from 'sonner';
 import { Save, User, Moon, Sun, Shield, Mail, Briefcase, Info } from 'lucide-react';
 import { Spinner } from '../components/ui/spinner';
+import GradeHorariaConfig from '../components/config/GradeHorariaConfig';
 
 const ConfiguracoesPage = () => {
   const { user, updateUser } = useAuth();
@@ -46,6 +47,13 @@ const ConfiguracoesPage = () => {
             Gerencie suas preferências e informações pessoais
           </p>
         </div>
+
+        {user?.role === 'professor' && (
+          <>
+            <GradeHorariaConfig />
+            <Separator />
+          </>
+        )}
 
         {/* Profile Section */}
         <div className="space-y-6">
